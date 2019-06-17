@@ -1,4 +1,4 @@
 .PHONY: docker
 
 docker:
-	docker build -t smartssd .
+	nvidia-docker build -t smartssd .

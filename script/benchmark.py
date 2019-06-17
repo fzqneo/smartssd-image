@@ -15,6 +15,35 @@ def _recursive_glob(base_dir, pattern):
         for filename in fnmatch.filter(filenames, pattern):
             yield os.path.join(root, filename)
 
+def read_file(image_dir, pattern='*.jpg', limit=None, print_result=True):
+    info = {}
+    raw_bytes = list()
+    count = 0
+    count_raw_bytes = 0
+
+    # read file
+    logger.info("Read raw bytes")
+    tic = time.time()
+    for p in _recursive_glob(image_dir, pattern):
+        count += 1
+        with open(p, 'r') as f:
+            b = f.read()
+            raw_bytes.append(b)
+            count_raw_bytes += len(b)
+        if limit is not None and count >= limit:
+            break
+    toc = time.time()
+    info['image_count'] = count
+    info['read_throughput'] = count / (toc - tic)
+    info['read_throughput_Mbytes'] = (count_raw_bytes / 1.0e6) / (toc - tic)
+    logger.info("Found {} files".format(count))
+
+    if print_result:
+        print json.dumps(info, indent=4, sort_keys=True)
+        return None
+    else:
+        return info
+
 
 def rgb_histo(image_dir, pattern='*.jpg', limit=None):
     info = {}

@@ -17,20 +17,17 @@ RUN apt-get update --fix-missing \
         python \
         python-dev \
         hdparm \
-        libglib2.0-0 \
-        # libgtk-3-dev \
-        # libboost-all-dev \
-        # libopenblas-dev \
-        # liblapack-dev \
+        libncurses5 libgcc1 libstdc++6 libc6 libx11-6 libxext6 \
+        libxrender1 libice6 libsm6 libgl1-mesa-glx libglib2.0-0 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 RUN (wget -qO- "https://bootstrap.pypa.io/get-pip.py" | python)
 
 # Install libjpeg-turbo and python bindings
-# RUN wget https://sourceforge.net/projects/libjpeg-turbo/files/2.0.0/libjpeg-turbo-official_2.0.0_amd64.deb/download -O libjpeg-turbo-official_2.0.0_amd64.deb \
-#     && dpkg -i libjpeg-turbo-official_2.0.0_amd64.deb \
-#     && pip install -U git+git://github.com/lilohuang/PyTurboJPEG.git
+RUN wget https://sourceforge.net/projects/libjpeg-turbo/files/2.0.0/libjpeg-turbo-official_2.0.0_amd64.deb/download -O libjpeg-turbo-official_2.0.0_amd64.deb \
+    && dpkg -i libjpeg-turbo-official_2.0.0_amd64.deb \
+    && pip install -U git+git://github.com/lilohuang/PyTurboJPEG.git
 
 COPY requirements.txt /tmp/
 RUN pip install -r /tmp/requirements.txt
