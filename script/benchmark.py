@@ -42,32 +42,15 @@ def read_file(image_dir, pattern='*.jpg', limit=None, print_result=True):
         print json.dumps(info, indent=4, sort_keys=True)
         return None
     else:
-        return info
+        return info, raw_bytes
 
 
 def rgb_histo(image_dir, pattern='*.jpg', limit=None):
-    info = {}
-    raw_bytes = list()
-    decoded_images = list()
-    count = 0
-    count_raw_bytes = 0
 
-    # read file
-    logger.info("Read raw bytes")
-    tic = time.time()
-    for p in _recursive_glob(image_dir, pattern):
-        count += 1
-        with open(p, 'r') as f:
-            b = f.read()
-            raw_bytes.append(b)
-            count_raw_bytes += len(b)
-        if limit is not None and count >= limit:
-            break
-    toc = time.time()
-    info['image_count'] = count
-    info['read_throughput'] = count / (toc - tic)
-    info['read_throughput_Mbytes'] = (count_raw_bytes / 1.0e6) / (toc - tic)
-    logger.info("Found {} images".format(count))
+    info, raw_bytes = read_file(image_dir, pattern, limit=limit, print_result=False)
+    count = info['image_count']
+
+    decoded_images = list()
 
     # decode jpeg
     logger.info("Image decode")
@@ -90,7 +73,7 @@ def rgb_histo(image_dir, pattern='*.jpg', limit=None):
     toc = time.time()
     info['rgb_histo_throughput'] = count / (toc - tic)
 
-    print json.dumps(info, indent=4)
+    print json.dumps(info, indent=4, sort_keys=True)
 
 
 if __name__ == "__main__":
