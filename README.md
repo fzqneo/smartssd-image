@@ -4,10 +4,11 @@ Smart SSD image processing
 ## cgroup
 
 ```bash
-sudo apt-get install cgroup-bin cgroup-lite cgroup-tools cgroupfs-mount libcgroup1
+sudo apt install cgroup-bin cgroup-lite cgroup-tools cgroupfs-mount libcgroup1
 
 sudo cgcreate -t zf:zf -g blkio:/s3dexp
-echo "8:32 400000000" | sudo tee /sys/fs/cgroup/blkio/s3dexp/blkio.throttle.read_bps_device
+# Find major and minor number by `cat /proc/partitions` or `ls -l /dev/sdc`
+echo "8:32 482344960" | sudo tee /sys/fs/cgroup/blkio/s3dexp/blkio.throttle.read_bps_device
 sudo cgexec -g blkio:/s3dexp hdparm -tT /dev/sdc
 ```
 
@@ -15,21 +16,43 @@ sudo cgexec -g blkio:/s3dexp hdparm -tT /dev/sdc
 
 ```bash
 sudo modprobe scsi_debug num_parts=1 dev_size_mb=4096 delay=0
+lsscsi -s   # show device name
 sudo mkfs.ext4 /dev/sdc1
 sudo mount /dev/sdc1 /mnt/scsi_drive
 sudo hdparm -tT /dev/sdc1
+
+# change parameters at run time
+echo 310000 | sudo tee /sys/bus/pseudo/drivers/scsi_debug/ndelay
+
 # remove the virtual disk
 # sudo umount /mnt/scsi_drive
 # sudo rmmod scsi_debug
+
+# check module parameters (rw or ro)
+ls -l /sys/bus/pseudo/drivers/scsi_debug
+
 ```
 
 ## ramdisk (brd)
 
 ```bash
-# rd_nr is num of /dev/ramX created. Following will create a 1GB ramdisk.
-sudo modprobe brd rd_nr=1 rd_size=1048576 max_part=0
+# rd_nr is num of /dev/ramX created. Following will create a 4G (rd_size kB) ramdisk.
+sudo modprobe brd rd_nr=1 rd_size=4194304 max_part=0
 ls /dev/ram*
-sudo mkfs /dev/ram0 1G
+sudo mkfs /dev/ram0 4G
 # remove the ram disk
 # sudo rmmod brd
+```
+
+## monitoring
+
+```bash
+iostat -x 1
+```
+
+## Upgrade Linux Kernel Version
+scsi_debug + cgroup is buggy on kernel 4.4.0.
+```bash
+sudo apt install linux-image-4.15.0-54-generic linux-headers-4.15.0-54-generic linux-modules-extra-4.15.0-54-generic
+# sudo reboot
 ```
