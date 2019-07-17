@@ -15,6 +15,8 @@ sudo cgexec -g blkio:/s3dexp hdparm -tT /dev/sdc
 ## scsi_debug
 
 ```bash
+# see all parameters and meanings
+# modinfo scsi_debug
 sudo modprobe scsi_debug num_parts=1 dev_size_mb=4096 delay=0
 lsscsi -s   # show device name
 sudo mkfs.ext4 /dev/sdc1
