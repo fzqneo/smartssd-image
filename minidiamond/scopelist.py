@@ -36,4 +36,4 @@ class FolderScopeList(object):
 if __name__ == '__main__':
     scope = FolderScopeList('/srv/diamond/00')
     for obj in scope:
-        print obj[ATTR_OBJ_ID]
+        print obj.src, obj[ATTR_OBJ_ID], obj[ATTR_DEVICE_NAME]

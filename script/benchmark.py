@@ -3,6 +3,7 @@ import directio
 import fire
 import fnmatch
 import glob
+from itertools import islice
 import json
 from logzero import logger
 import numpy as np
@@ -20,6 +21,46 @@ def _recursive_glob(base_dir, pattern):
     for root, dirnames, filenames in os.walk(base_dir):
         for filename in fnmatch.filter(filenames, pattern):
             yield os.path.join(root, filename)
+
+def fetcher(base_dir, pattern="*.jpg", limit=None):
+    """Speed test for Scopelist + Fetcher
+    
+    Arguments:
+        base_dir {string} -- Base directory to find files
+    
+    Keyword Arguments:
+        pattern {str} -- File name pattern (default: {"*.jpg"})
+        limit {integer} -- Stop after (default: {None})
+    """
+    from opendiamond.filter import Session
+    from minidiamond import ATTR_OBJ_ID
+    from minidiamond.scopelist import FolderScopeList
+    from minidiamond.filter.fil_fetcher import Fetcher
+
+    info = {}    
+    scopelist = FolderScopeList(base_dir, pattern)
+    session = Session('filter')
+    fetcher = Fetcher(args=[], blob=None, session=session)
+
+    count_raw_bytes = 0
+    tic = time.time()
+    for i, obj in enumerate(islice(scopelist, 0, limit)):
+        fetcher(obj)
+        count_raw_bytes += len(obj.data)
+        # logger.debug('{}: {} bytes'.format(obj[ATTR_OBJ_ID], len(obj.data)))
+
+    toc = time.time()
+
+    count = i + 1
+    logger.info("Found {} files".format(count))
+
+    info['image_count'] = count
+    info['total_MBytes'] = count_raw_bytes / 1.0e6
+    info['read_throughput'] = count / (toc - tic)
+    info['read_throughput_Mbytes'] = (count_raw_bytes / 1.0e6) / (toc - tic)
+
+    print json.dumps(info, indent=4, sort_keys=True)
+
 
 def read_file(image_dir, pattern='*.jpg', limit=None, standalone=True):
     """Speed test reading files from a directory.
@@ -62,6 +103,7 @@ def read_file(image_dir, pattern='*.jpg', limit=None, standalone=True):
             break
     toc = time.time()
     info['image_count'] = count
+    info['total_MBytes'] = count_raw_bytes / 1.0e6
     info['read_throughput'] = count / (toc - tic)
     info['read_throughput_Mbytes'] = (count_raw_bytes / 1.0e6) / (toc - tic)
     logger.info("Found {} files".format(count))
