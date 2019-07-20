@@ -58,3 +58,9 @@ scsi_debug + cgroup is buggy on kernel 4.4.0.
 sudo apt install linux-image-4.15.0-54-generic linux-headers-4.15.0-54-generic linux-modules-extra-4.15.0-54-generic
 # sudo reboot
 ```
+
+## Todo
+
++ Store all images' meta info (file name, original file size, image size) to MySQL.
+
++ Convert and save image in PPM format
