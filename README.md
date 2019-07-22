@@ -1,6 +1,14 @@
 # smartssd-image
 Smart SSD image processing
 
+
+## Todo
+
++ Store all images' meta info (file name, original file size, image size) to MySQL.
+
++ Convert and save image in PPM format
+
+
 ## cgroup
 
 ```bash
@@ -59,8 +67,10 @@ sudo apt install linux-image-4.15.0-54-generic linux-headers-4.15.0-54-generic l
 # sudo reboot
 ```
 
-## Todo
+### OpenCV vs. PIL
 
-+ Store all images' meta info (file name, original file size, image size) to MySQL.
+JPEG decode (input in RAM): 
 
-+ Convert and save image in PPM format
+OpenCV (officitial `opencv`)  ~=  PIL ~= 210
+
+OpenCV (unofficial `opencv-contribe-python`) = 350 (uses libjpeg-turbo)
