@@ -4,9 +4,9 @@ Smart SSD image processing
 
 ## Todo
 
-+ Store all images' meta info (file name, original file size, image size) to MySQL.
-
-+ Convert and save image in PPM format
+- [ ] Store all images' meta info (file name, original file size, image size) to MySQL.
+- [ ] Convert and save image in PPM format
+- [ ] Benchmark FS and RGB on PPM files
 
 
 ## cgroup

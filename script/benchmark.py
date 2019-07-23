@@ -1,37 +1,29 @@
 import cv2
-import directio
 import fire
-import fnmatch
-import glob
 from io import BytesIO
 from itertools import islice
 import json
 import logging
 from logzero import logger
+import multiprocessing as mp
 import numpy as np
 import os
 import PIL.Image as Image
+import Queue
 from rgb_histo import calc_1d_hist_flatten
+import threading
 import time
+
+from s3dexp.utils import recursive_glob
+
 
 if int(os.getenv('VERBOSE', 0)) >= 1:
     logger.setLevel(logging.DEBUG)
 else:
     logger.setLevel(logging.INFO)
 
-def _directio_read(path):
-    fd = os.open(path, os.O_RDONLY | os.O_DIRECT)
-    content = directio.read(fd, 1024*1024)  # FIXME
-    os.close(fd)
-    return content
 
-def _recursive_glob(base_dir, pattern):
-    for root, dirnames, filenames in os.walk(base_dir):
-        for filename in fnmatch.filter(filenames, pattern):
-            yield os.path.join(root, filename)
-
-
-def minidiamond(base_dir, pattern="*.jpg", limit=None, fetcher_only=False):
+def minidiamond(base_dir, pattern="*.*", limit=None, fetcher_only=False, async_fetcher=True):
     """Speed test for Scopelist + Fetcher + RGB
     
     Arguments:
@@ -41,6 +33,7 @@ def minidiamond(base_dir, pattern="*.jpg", limit=None, fetcher_only=False):
         pattern {str} -- File name pattern (default: {"*.jpg"})
         limit {integer} -- Stop after (default: {None})
         fetcher_only -- only run fetcher (default: {False})
+        async_fetcher -- run fetcher in a separate thread/process
     """
     from opendiamond.filter import Session
     from minidiamond import ATTR_OBJ_ID
@@ -52,28 +45,66 @@ def minidiamond(base_dir, pattern="*.jpg", limit=None, fetcher_only=False):
     scopelist = FolderScopeList(base_dir, pattern)
     session = Session('filter')
 
+    fetcher = Fetcher(args=[], blob=None, session=session)
     filters = []
-    filters.append(Fetcher(args=[], blob=None, session=session))
     if not fetcher_only:
         filters.append(RGBFilter(args=[], blob=None, session=session))
-    logger.info("Running filters: {}".format(map(type, filters)))
+    logger.info("Running filters: {}".format(map(type, [fetcher] + filters)))
 
     count_raw_bytes = 0
     tic = time.time()
-    for i, obj in enumerate(islice(scopelist, 0, limit)):
-        try:
-            map(lambda fil: fil(obj), filters)
-            count_raw_bytes += len(obj.data)
-            # logger.debug('{}: {} bytes'.format(obj[ATTR_OBJ_ID], len(obj.data)))
-            if not fetcher_only:
-                logger.debug('{}: {} cols(w) {} rows(h)'.format(
-                    obj[ATTR_OBJ_ID], obj.get_int('_cols.int'), obj.get_int('_rows.int')))
-        except:
-            logger.error('Error happend at {}-th. {}'.format(i, obj[ATTR_OBJ_ID]))
+    count = 0
 
+    if async_fetcher:
+        # pipeline fetcher and other filters
+        def do_fetcher(scopelist, q):
+            count = 0
+            logger.info("[{}] fetcher running".format(os.getpid()))
+            for obj in islice(scopelist, 0, limit):
+                count += 1
+                fetcher(obj)
+                q.put(obj)
+                logger.debug("({}) enqued {}".format(count, obj[ATTR_OBJ_ID]))
+            q.put(None) # sentinel
+            logger.info("ScopeList ends.")
+        
+        q = mp.Queue(maxsize=100)
+        fetcher_worker = mp.Process(target=do_fetcher, args=(scopelist, q))
+        fetcher_worker.start()
+
+        logger.info("[{}] filters running".format(os.getpid()))
+        while True:
+            obj = q.get()
+            if obj is not None:
+                count += 1
+                count_raw_bytes += len(obj.data)
+                try:
+                    map(lambda fil: fil(obj), filters)
+                    if not fetcher_only:
+                        logger.debug('({}) {}: {} cols(w) {} rows(h)'.format(
+                            count, obj[ATTR_OBJ_ID], obj.get_int('_cols.int'), obj.get_int('_rows.int')))
+                except:
+                    logger.error('Error happend at {}-th. {}'.format(count, obj[ATTR_OBJ_ID]))
+            else:
+                break
+
+        fetcher_worker.join()
+    else:
+        for i, obj in enumerate(islice(scopelist, 0, limit)):
+            count += 1
+            try:
+                fetcher(obj)
+                count_raw_bytes += len(obj.data)
+                map(lambda fil: fil(obj), filters)
+                # logger.debug('{}: {} bytes'.format(obj[ATTR_OBJ_ID], len(obj.data)))
+                if not fetcher_only:
+                    logger.debug('{}: {} cols(w) {} rows(h)'.format(
+                        obj[ATTR_OBJ_ID], obj.get_int('_cols.int'), obj.get_int('_rows.int')))
+            except:
+                logger.error('Error happend at {}-th. {}'.format(i, obj[ATTR_OBJ_ID]))
+    
     toc = time.time()
 
-    count = i + 1
     logger.info("Found {} files".format(count))
 
     info['image_count'] = count
@@ -84,7 +115,7 @@ def minidiamond(base_dir, pattern="*.jpg", limit=None, fetcher_only=False):
     print json.dumps(info, indent=4, sort_keys=True)
 
 
-def read_file(image_dir, pattern='*.jpg', limit=None, standalone=True):
+def read_file(image_dir, pattern='*.*', limit=None, standalone=True):
     """Speed test reading files from a directory.
     
     Arguments:
@@ -107,7 +138,7 @@ def read_file(image_dir, pattern='*.jpg', limit=None, standalone=True):
     # read file
     logger.info("Read raw bytes")
     tic = time.time()
-    for p in _recursive_glob(image_dir, pattern):
+    for p in recursive_glob(image_dir, pattern):
         count += 1
 
         # b = _directio_read(p)
@@ -138,7 +169,7 @@ def read_file(image_dir, pattern='*.jpg', limit=None, standalone=True):
 
 
 
-def raw_decode(image_dir, pattern='*.jpg', codec='PIL', limit=None):
+def raw_decode(image_dir, pattern='*.*', codec='CV2', limit=None):
     assert codec in ('PIL', 'CV2', 'TurboJPEG')
 
     info, raw_bytes = read_file(image_dir, pattern, limit=limit, standalone=False)
