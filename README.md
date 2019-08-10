@@ -22,10 +22,12 @@ sudo cgexec -g blkio:/s3dexp hdparm -tT /dev/sdc
 
 ## scsi_debug
 
+Set `ndelay=1` to have almost-zero delay. Don't set it to 0. It will disable the parameter.
+
 ```bash
 # see all parameters and meanings
 # modinfo scsi_debug
-sudo modprobe scsi_debug num_parts=1 dev_size_mb=4096 delay=0
+sudo modprobe scsi_debug num_parts=1 dev_size_mb=4096 delay=1
 lsscsi -s   # show device name
 sudo mkfs.ext4 /dev/sdc1
 sudo mount /dev/sdc1 /mnt/scsi_drive

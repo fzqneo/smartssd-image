@@ -19,14 +19,14 @@ scsi__find_scsi_device() {
 scsi__setup() {
     device=$(scsi__find_scsi_device)
     [ -z "$device" ] || (echo "A scsi_debug drive is already in place: $device" >&2 && exit 1)
-    sudo modprobe scsi_debug num_parts=1 dev_size_mb=8192   # create an 8GB ramdisk
+    sudo modprobe scsi_debug num_parts=1 dev_size_mb=8192 ndelay=1  # create an 8GB ramdisk
     device=$(scsi__find_scsi_device)
     echo "Created scsi_debg at $device" >&2
     sudo mkfs.ext4 ${device}1
     sudo mkdir -p $MOUNT_POINT
     sudo mount ${device}1 $MOUNT_POINT
     echo "Preparing files" >&2
-    sudo rsync -a --stats /srv/diamond/Y0 $MOUNT_POINT
+    sudo rsync -a --stats /srv/diamond/flickr2500 $MOUNT_POINT
 }
 
 scsi__teardown() {

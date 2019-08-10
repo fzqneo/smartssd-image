@@ -17,11 +17,10 @@ class RGBFilter(Filter):
     def __call__(self, obj):
         try:
             bgr = cv2.imdecode(np.frombuffer(obj.data, np.int8), cv2.IMREAD_COLOR)
-            img = Image.fromarray(cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB))
-            obj.set_rgbimage('_rgb_image.rgbimage', img)
-            obj.set_int('_rows.int', img.height)
-            obj.set_int('_cols.int', img.width)
-            obj.omit('_rgb_image.rgbimage')
+            obj.set_binary('_bgr_image', bgr)
+            h, w = bgr.shape[:2]
+            obj.set_int('_rows.int', h)
+            obj.set_int('_cols.int', w)
             return False
         except:
             self.session.log('error', traceback.format_exc())

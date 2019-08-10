@@ -23,7 +23,7 @@ else:
     logger.setLevel(logging.INFO)
 
 
-def minidiamond(base_dir, pattern="*.*", limit=None, fetcher_only=False, async_fetcher=True):
+def minidiamond(base_dir, pattern="*.*", limit=None, fetcher_only=False, async_fetcher=True, use_mp=False):
     """Speed test for Scopelist + Fetcher + RGB
     
     Arguments:
@@ -33,7 +33,8 @@ def minidiamond(base_dir, pattern="*.*", limit=None, fetcher_only=False, async_f
         pattern {str} -- File name pattern (default: {"*.jpg"})
         limit {integer} -- Stop after (default: {None})
         fetcher_only -- only run fetcher (default: {False})
-        async_fetcher -- run fetcher in a separate thread/process
+        async_fetcher {bool} -- run fetcher in a separate thread/process (default: {True})
+        use_mp {bool} -- use multi-processing instead of multithreading (default: {False})
     """
     from opendiamond.filter import Session
     from minidiamond import ATTR_OBJ_ID
@@ -68,8 +69,19 @@ def minidiamond(base_dir, pattern="*.*", limit=None, fetcher_only=False, async_f
             q.put(None) # sentinel
             logger.info("ScopeList ends.")
         
-        q = mp.Queue(maxsize=100)
-        fetcher_worker = mp.Process(target=do_fetcher, args=(scopelist, q))
+        # switch between threading and multiprocessing
+        if use_mp:
+            queue_cls = mp.Queue
+            thread_cls = mp.Process
+        else:
+            queue_cls = Queue.Queue
+            thread_cls = threading.Thread
+        
+        logger.info("Using {} and {} for async".format(queue_cls, thread_cls))
+
+        q = queue_cls(maxsize=100)
+        fetcher_worker = thread_cls(target=do_fetcher, args=(scopelist, q))
+        
         fetcher_worker.start()
 
         logger.info("[{}] filters running".format(os.getpid()))
@@ -156,9 +168,9 @@ def read_file(image_dir, pattern='*.*', limit=None, standalone=True):
             break
     toc = time.time()
     info['image_count'] = count
-    info['total_MBytes'] = count_raw_bytes / 1.0e6
+    info['total_MBytes'] = count_raw_bytes / (2.**20)
     info['read_tput'] = count / (toc - tic)
-    info['read_tput_Mbytes'] = (count_raw_bytes / 1.0e6) / (toc - tic)
+    info['read_tput_Mbytes'] = (count_raw_bytes / 2.0**20) / (toc - tic)
     logger.info("Found {} files".format(count))
 
     if standalone:
