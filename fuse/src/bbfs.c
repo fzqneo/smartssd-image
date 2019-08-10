@@ -43,6 +43,44 @@
 
 #include "log.h"
 
+
+//////////////////////
+// Utility functions
+/////////////////////
+
+int endswith(const char *str, const char *suffix)
+{
+    if (!str || !suffix)
+        return 0;
+    size_t lenstr = strlen(str);
+    size_t lensuffix = strlen(suffix);
+    if (lensuffix > lenstr)
+        return 0;
+    return strncmp(str+lenstr-lensuffix, suffix, lensuffix) == 0;
+}
+
+int accept_path(const char *path)
+{
+    return endswith(path, ".jpg") || endswith(path, ".png");
+}
+
+int convert_if_accept_path(char *path)
+{
+    if (accept_path(path))
+    {
+        size_t l = strlen(path);
+        log_msg("\nDetected supported extension: %s\n", path+l-3);
+        path[l-3] = 'p';
+        path[l-2] = 'p';
+        path[l-1] = 'm';
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 //  All the paths I see are relative to the root of the mounted
 //  filesystem.  In order to get to the underlying filesystem, I need to
 //  have the mountpoint.  I'll save it away early on in main(), and then
@@ -76,7 +114,12 @@ int bb_getattr(const char *path, struct stat *statbuf)
     
     log_msg("\nbb_getattr(path=\"%s\", statbuf=0x%08x)\n",
 	  path, statbuf);
-    bb_fullpath(fpath, path);
+
+    char path_copy[PATH_MAX];
+    strcpy(path_copy, path);
+    convert_if_accept_path(path_copy);
+
+    bb_fullpath(fpath, path_copy);
 
     retstat = log_syscall("lstat", lstat(fpath, statbuf), 0);
     
@@ -294,10 +337,16 @@ int bb_open(const char *path, struct fuse_file_info *fi)
     int retstat = 0;
     int fd;
     char fpath[PATH_MAX];
-    
+
     log_msg("\nbb_open(path\"%s\", fi=0x%08x)\n",
 	    path, fi);
-    bb_fullpath(fpath, path);
+
+    // zf: check if path has known image format, and convert path to .ppm
+    char path_copy[PATH_MAX];
+    strcpy(path_copy, path);
+    convert_if_accept_path(path_copy);
+
+    bb_fullpath(fpath, path_copy);
     
     // if the open call succeeds, my retstat is the file descriptor,
     // else it's -errno.  I'm making sure that in that case the saved

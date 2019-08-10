@@ -7,6 +7,23 @@ Smart SSD image processing
 - [ ] Store all images' meta info (file name, original file size, image size) to MySQL.
 - [ ] Convert and save image in PPM format
 - [ ] Benchmark FS and RGB on PPM files
+- [ ] Use FUSE to map access to .jpg files to .ppm files
+
+
+## Running FUSE
+
+```
+# build
+cd fuse
+./configure
+make
+
+# mount
+src/bbfs $FUSE_ROOTDIR $FUSE_MOUNTDIR
+
+# un-mount
+fusermount -u $FUSE_MOUNTDIR
+```
 
 
 ## cgroup
