@@ -5,24 +5,22 @@ Smart SSD image processing
 ## Todo
 
 - [ ] Store all images' meta info (file name, original file size, image size) to MySQL.
-- [ ] Convert and save image in PPM format
-- [ ] Benchmark FS and RGB on PPM files
-- [ ] Use FUSE to map access to .jpg files to .ppm files
+- [x] Convert and save image in PPM format
+- [x] Benchmark FS and RGB on PPM files
+- [x] Use FUSE to map access to .jpg files to .ppm files
+- [x] Add script to set up ram disk and populate it ppm data set
+- [ ] Modify FUSE: (1) Read .jpg from HDD; (2) Read .ppm from ram disk; (3) return PPM data
+- [ ] Use alembic to create experiment DB tables
 
 
-## Running FUSE
+## Running our custom FUSE on top of ram disk
 
-```
-# build
-cd fuse
-./configure
-make
+```bash
+make fuse-up    # will call `make brd-up`
 
-# mount
-src/bbfs $FUSE_ROOTDIR $FUSE_MOUNTDIR
-
-# un-mount
-fusermount -u $FUSE_MOUNTDIR
+# tear down
+make fuse-down  # only unmount the FUSE
+make brd-down   # this tears down the ram disk too
 ```
 
 
