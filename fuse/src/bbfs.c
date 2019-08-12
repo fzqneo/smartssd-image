@@ -48,7 +48,7 @@
 // Utility functions
 /////////////////////
 
-int endswith(const char *str, const char *suffix)
+static int endswith(const char *str, const char *suffix)
 {
     if (!str || !suffix)
         return 0;
@@ -59,12 +59,12 @@ int endswith(const char *str, const char *suffix)
     return strncmp(str+lenstr-lensuffix, suffix, lensuffix) == 0;
 }
 
-int accept_path(const char *path)
+static int accept_path(const char *path)
 {
     return endswith(path, ".jpg") || endswith(path, ".png");
 }
 
-int convert_if_accept_path(char *path)
+static int convert_if_accept_path(char *path)
 {
     if (accept_path(path))
     {
@@ -76,9 +76,49 @@ int convert_if_accept_path(char *path)
         return 1;
     }
     else
-    {
         return 0;
+}
+
+static long int find_size(const char* path)
+{
+    struct stat st;
+    if (stat(path, &st) == 0)
+        return st.st_size;
+    else
+        return -1;
+}
+
+int swallow_file(const char* path)
+{
+    int sz = find_size(path);
+    if (sz < 0)
+        return -1;
+    char* buf = malloc(sz);
+    int fd = open(path, O_RDONLY);
+    size_t count = 0;
+    while(count < sz)
+    {
+        int rv = read(fd, buf, sz - count);
+        if (rv <= 0)
+            break;
+        else
+            count += rv;
     }
+    free(buf);
+    close(fd);
+
+    log_msg("\nSwallowed %d bytes from: %s\n", count, path);
+    return count == sz ? sz:-1;
+}
+
+static void jpg_fullpath(char fpath[PATH_MAX], const char *path)
+{
+    strcpy(fpath, BB_DATA->jpgdir);
+    strncat(fpath, path, PATH_MAX); // ridiculously long paths will
+				    // break here
+
+    log_msg("    jpg_fullpath:  jpgdir = \"%s\", path = \"%s\", fpath = \"%s\"\n",
+	    BB_DATA->jpgdir, path, fpath);
 }
 
 //  All the paths I see are relative to the root of the mounted
@@ -115,11 +155,11 @@ int bb_getattr(const char *path, struct stat *statbuf)
     log_msg("\nbb_getattr(path=\"%s\", statbuf=0x%08x)\n",
 	  path, statbuf);
 
-    char path_copy[PATH_MAX];
-    strcpy(path_copy, path);
-    convert_if_accept_path(path_copy);
+    char path_convert[PATH_MAX];
+    strcpy(path_convert, path);
+    convert_if_accept_path(path_convert);
 
-    bb_fullpath(fpath, path_copy);
+    bb_fullpath(fpath, path_convert);
 
     retstat = log_syscall("lstat", lstat(fpath, statbuf), 0);
     
@@ -338,22 +378,30 @@ int bb_open(const char *path, struct fuse_file_info *fi)
     int fd;
     char fpath[PATH_MAX];
 
-    log_msg("\nbb_open(path\"%s\", fi=0x%08x)\n",
-	    path, fi);
+    log_msg("\nbb_open(path\"%s\", fi=0x%08x)\n", path, fi);
 
     // zf: check if path has known image format, and convert path to .ppm
-    char path_copy[PATH_MAX];
-    strcpy(path_copy, path);
-    convert_if_accept_path(path_copy);
+    char path_convert[PATH_MAX];
+    strcpy(path_convert, path);
+    convert_if_accept_path(path_convert);
 
-    bb_fullpath(fpath, path_copy);
+    bb_fullpath(fpath, path_convert);
+
+    // emulate reading the original jpeg file first
+    char fpath_jpg[PATH_MAX];
+    jpg_fullpath(fpath_jpg, path);
+    if(swallow_file(fpath_jpg) < 0)
+    {
+    	retstat = log_error("open");
+        return retstat;
+    }
     
     // if the open call succeeds, my retstat is the file descriptor,
     // else it's -errno.  I'm making sure that in that case the saved
     // file descriptor is exactly -1.
     fd = log_syscall("open", open(fpath, fi->flags), 0);
     if (fd < 0)
-	retstat = log_error("open");
+    	retstat = log_error("open");
 	
     fi->fh = fd;
 
@@ -961,6 +1009,8 @@ int main(int argc, char *argv[])
     argc--;
     
     bb_data->logfile = log_open();
+
+    bb_data->jpgdir = realpath("/mnt/hdd/fast20/jpeg/", NULL);
     
     // turn over control to fuse
     fprintf(stderr, "about to call fuse_main\n");

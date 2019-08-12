@@ -19,8 +19,9 @@ Smart SSD image processing
 make fuse-up    # will call `make brd-up`
 
 # tear down
-make fuse-down  # only unmount the FUSE
-make brd-down   # this tears down the ram disk too
+make fuse-down  # only unmount the FUSE; ram disk persists
+# or:
+make fuse-down brd-down   # this tears down the ram disk too
 ```
 
 
