@@ -1,6 +1,7 @@
 # smartssd-image
 Smart SSD image processing
 
+**FAST'20 submission deadline: 9/26/2019**
 
 ## Todo
 
@@ -9,7 +10,7 @@ Smart SSD image processing
 - [x] Benchmark FS and RGB on PPM files
 - [x] Use FUSE to map access to .jpg files to .ppm files
 - [x] Add script to set up ram disk and populate it ppm data set
-- [ ] Modify FUSE: (1) Read .jpg from HDD; (2) Read .ppm from ram disk; (3) return PPM data
+- [x] Modify FUSE: (1) Read .jpg from HDD; (2) Read .ppm from ram disk; (3) return PPM data
 - [ ] Use alembic to create experiment DB tables
 
 
