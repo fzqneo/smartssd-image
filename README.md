@@ -5,14 +5,16 @@ Smart SSD image processing
 
 ## Todo
 
-- [ ] Store all images' meta info (file name, original file size, image size) to MySQL.
+- [x] Store all images' meta info (file name, original file size, image size) to MySQL.
 - [x] Convert and save image in PPM format
 - [x] Benchmark FS and RGB on PPM files
 - [x] Use FUSE to map access to .jpg files to .ppm files
 - [x] Add script to set up ram disk and populate it ppm data set
 - [x] Modify FUSE: (1) Read .jpg from HDD; (2) Read .ppm from ram disk; (3) return PPM data
-- [ ] Use alembic to create experiment DB tables
-
+- [x] Use alembic to create experiment DB tables
+- [x] Profile times to read image bytes from disk
+- [ ] Profile image decode time in MobileNet/ResNet/Faster-RCNN inference
+- [ ] Determine three data sets to be used in the paper
 
 ## Running our custom FUSE on top of ram disk
 
