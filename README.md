@@ -21,7 +21,7 @@ Smart SSD image processing
 ## Experiment Infrastructure
 
 * cloudlet015.elijah.cs.cmu.edu (limited to CMU IP)
-* Code: /home/zf/git/smartssd-image
+* User group: fast20 (Run `newgrp fast20` to change login group)
 * Data: /mnt/hdd/fast20/
 
 * MySQL DB for storing results
@@ -32,14 +32,15 @@ Smart SSD image processing
     import s3dexp.db.utils as dbutils
     import s3dexp.db.models as models
     ``` 
-* Conda environment
+* Conda environment (s3dexp)
     1. Install miniconda
     2. Add the following to `~/.condarc`:
     ```
     envs_dirs:
         - /home/zf/miniconda2/envs
     ```
-    3. Install changes to conda env: `make install`
+    3. Activate: `conda activate s3dexp`
+    4. Install changes of Python code to conda env: `make install`
 
 ## Running our custom FUSE on top of ram disk
 
