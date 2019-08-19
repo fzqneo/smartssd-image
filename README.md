@@ -14,7 +14,32 @@ Smart SSD image processing
 - [x] Use alembic to create experiment DB tables
 - [x] Profile times to read image bytes from disk
 - [ ] Profile image decode time in MobileNet/ResNet/Faster-RCNN inference
-- [ ] Determine three data sets to be used in the paper
+- [ ] Determine three (labeled) data sets to be used in the paper
+- [ ] Determine 3~4 DNN models to be used in the paper
+
+
+## Experiment Infrastructure
+
+* cloudlet015.elijah.cs.cmu.edu (limited to CMU IP)
+* Code: /home/zf/git/smartssd-image
+* Data: /mnt/hdd/fast20/
+
+* MySQL DB for storing results
+    * Web UI: http://cloudlet015.elijah.cs.cmu.edu:8081/
+    * Credentials: /home/zf/git/smartssd-image/.envrc
+    * Access DB in Python (see [script/profile_data.py](script/profile_data.py) for example): 
+    ```python
+    import s3dexp.db.utils as dbutils
+    import s3dexp.db.models as models
+    ``` 
+* Conda environment
+    1. Install miniconda
+    2. Add the following to `~/.condarc`:
+    ```
+    envs_dirs:
+        - /home/zf/miniconda2/envs
+    ```
+    3. Install changes to conda env: `make install`
 
 ## Running our custom FUSE on top of ram disk
 
@@ -41,11 +66,10 @@ sudo cgexec -g blkio:/s3dexp hdparm -tT /dev/sdc
 
 ## scsi_debug
 
-Set `ndelay=1` to have almost-zero delay. Don't set it to 0. It will disable the parameter.
+Set `ndelay=1` to have almost-zero nanoseconds delay. Don't set it to 0. It will disable the parameter.
 
 ```bash
-# see all parameters and meanings
-# modinfo scsi_debug
+# to see all parameters and meanings: modinfo scsi_debug
 sudo modprobe scsi_debug num_parts=1 dev_size_mb=4096 delay=1
 lsscsi -s   # show device name
 sudo mkfs.ext4 /dev/sdc1
