@@ -19,3 +19,4 @@ class DiskReadProfile(Base):
     disk = sa.Column(sa.String(20))
     seq_read_ms = sa.Column(sa.Float(53))
     rand_read_ms = sa.Column(sa.Float(53))
+    size = sa.Column(sa.Integer)

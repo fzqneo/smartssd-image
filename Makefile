@@ -1,4 +1,3 @@
-# .PHONY: docker
 
 docker:
 	nvidia-docker build -t smartssd .
@@ -8,6 +7,9 @@ install:
 	
 db-up:
 	docker-compose up -d
+
+db-backup:
+	docker exec s3dexp-db /usr/bin/mysqldump -u root --password=${DB_PASSWORD} --all-databases > /mnt/hdd/fast20-mysql-bk/backup-$$(date +%Y%m%d).sql
 
 fuse-build:
 	(cd fuse; make)
@@ -34,3 +36,7 @@ brd-up:
 brd-down:
 	sudo umount /mnt/ramdisk
 	sudo rmmod brd
+
+clear-page:
+	sync; echo 1 | sudo tee /proc/sys/vm/drop_caches
+	

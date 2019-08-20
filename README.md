@@ -53,7 +53,6 @@ make fuse-down  # only unmount the FUSE; ram disk persists
 make fuse-down brd-down   # this tears down the ram disk too
 ```
 
-
 ## cgroup
 
 ```bash
@@ -106,14 +105,17 @@ sudo mkfs /dev/ram0 4G
 iostat -x 1
 ```
 
-## Upgrade Linux Kernel Version
+## Upgrade Linux kernel version
 scsi_debug + cgroup is buggy on kernel 4.4.0.
 ```bash
 sudo apt install linux-image-4.15.0-54-generic linux-headers-4.15.0-54-generic linux-modules-extra-4.15.0-54-generic
 # sudo reboot
 ```
 
-### OpenCV vs. PIL
+## tfrecord
+https://www.tensorflow.org/tutorials/load_data/tf_records#tfrecords_format_details
+
+## OpenCV vs. PIL
 
 JPEG decode (input in RAM): 
 
