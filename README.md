@@ -13,9 +13,11 @@ Smart SSD image processing
 - [x] Modify FUSE: (1) Read .jpg from HDD; (2) Read .ppm from ram disk; (3) return PPM data
 - [x] Use alembic to create experiment DB tables
 - [x] Profile times to read image bytes from disk
+- [x] Profile software JPEG decode time
 - [ ] Profile image decode time in MobileNet/ResNet/Faster-RCNN inference
-- [ ] Determine three (labeled) data sets to be used in the paper
+- [ ] Find or create a PNG data set
 - [ ] Determine 3~4 DNN models to be used in the paper
+- [ ] Implement emulated JPEG ASIC that scales decode time based on software decode time
 
 
 ## Experiment Infrastructure
@@ -41,6 +43,14 @@ Smart SSD image processing
     ```
     3. Activate: `conda activate s3dexp`
     4. Install changes of Python code to conda env: `make install`
+
+
+## Clearing OS page cache before running experiments
+
+For all experiments that measures disk read times, make sure to run this before experiment:
+```bash
+make clear-page
+```
 
 ## Running our custom FUSE on top of ram disk
 

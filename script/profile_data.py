@@ -1,11 +1,15 @@
+import cv2
 import fire
 from logzero import logger
+import numpy as np
 import os
 import PIL.Image as Image
+import time
+
 import s3dexp.db.utils as dbutils
 import s3dexp.db.models as models
 from s3dexp.utils import recursive_glob
-import time
+
 
 def image_meta(base_dir, ext='jpg'):
     sess = dbutils.get_session()
@@ -28,7 +32,7 @@ def image_meta(base_dir, ext='jpg'):
 
     
 def disk_read(base_dir, disk, ext='jpg', sort_inode=False):
-    print "Make sure you cleaned the OS page buffer!"
+    logger.warn("Make sure you cleaned the OS page buffer!")
     base_dir = os.path.realpath(base_dir)
 
     sess = dbutils.get_session()
@@ -57,6 +61,43 @@ def disk_read(base_dir, disk, ext='jpg', sort_inode=False):
         dbutils.insert_or_update_one(
             sess, models.DiskReadProfile,
             keys_dict={'path': p, 'disk': disk},
+            vals_dict=vals_dict
+        )
+
+    sess.commit()
+    sess.close()
+
+
+def decode_time(base_dir, ext='jpg', repeat=3):
+    sess = dbutils.get_session()
+
+    for path in recursive_glob(base_dir, '*.{}'.format(ext)):
+        with open(path, 'rb') as f:
+            buf = f.read()
+
+        tic = time.time()
+        for _ in range(repeat):
+            arr = cv2.imdecode(np.frombuffer(buf, np.int8), cv2.IMREAD_COLOR)
+
+        elapsed = time.time() - tic
+
+        h, w = arr.shape[:2]
+        decode_ms = elapsed*1000 / repeat
+        size = len(buf)
+
+        keys_dict={'path': path}
+        vals_dict={
+            'basename': os.path.basename(path),
+            'size': size,
+            'height': h,
+            'width': w,
+            'decode_ms': decode_ms
+        }
+        logger.debug(str(vals_dict))
+
+        dbutils.insert_or_update_one(
+            sess, models.DecodeProfile,
+            keys_dict=keys_dict,
             vals_dict=vals_dict
         )
 

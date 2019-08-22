@@ -20,3 +20,15 @@ class DiskReadProfile(Base):
     seq_read_ms = sa.Column(sa.Float(53))
     rand_read_ms = sa.Column(sa.Float(53))
     size = sa.Column(sa.Integer)
+
+
+class DecodeProfile(Base):
+    __tablename__ = 'DecodeProfile'
+    id = sa.Column(sa.Integer, primary_key=True)
+    path = sa.Column(sa.String(1024), nullable=False)
+    basename = sa.Column(sa.String(1024), nullable=False)
+    size = sa.Column(sa.Integer)
+    width = sa.Column(sa.Integer)
+    height = sa.Column(sa.Integer)
+    decode_ms = sa.Column(sa.Float(53))
+    
