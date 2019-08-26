@@ -40,3 +40,5 @@ brd-down:
 clear-cache:
 	sync; echo 1 | sudo tee /proc/sys/vm/drop_caches
 	
+no-turbo:
+	echo 1 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo

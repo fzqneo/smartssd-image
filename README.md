@@ -5,6 +5,12 @@ Smart SSD image processing
 
 ## Todo
 
+- [ ] Profile image decode time in MobileNet/ResNet/Faster-RCNN inference
+- [ ] Determine 3~4 DNN models to be used in the paper
+- [ ] Find or create a PNG data set
+- [ ] Create skeleton of emulated storage API
+- [x] Create cgroup for host and emulated disk
+- [x] Implement emulated JPEG ASIC that scales decode time based on software decode time
 - [x] Store all images' meta info (file name, original file size, image size) to MySQL.
 - [x] Convert and save image in PPM format
 - [x] Benchmark FS and RGB on PPM files
@@ -14,10 +20,6 @@ Smart SSD image processing
 - [x] Use alembic to create experiment DB tables
 - [x] Profile times to read image bytes from disk
 - [x] Profile software JPEG decode time
-- [ ] Profile image decode time in MobileNet/ResNet/Faster-RCNN inference
-- [ ] Find or create a PNG data set
-- [ ] Determine 3~4 DNN models to be used in the paper
-- [ ] Implement emulated JPEG ASIC that scales decode time based on software decode time
 
 
 ## Experiment Infrastructure
@@ -48,7 +50,7 @@ Smart SSD image processing
 
 ## Clearing OS page cache before running experiments
 
-For all experiments that measures disk read times, make sure to run this before experiment:
+For all experiments that include disk read times, make sure to run this before experiment:
 ```bash
 make clear-page
 ```
@@ -63,9 +65,31 @@ make brd-down
 
 ## cgroup
 
+* cgroup of host: s3dexphost    (4 cores, 16g)
+* cgroup of emulated disk: s3dexpdisk   (4 cores, 8g)
+
+Executing a program under cgroup:
+```bash
+# launch a program under the cgroups, for containers, look at --cgroup-parent 
+sudo cgexec -g cpuset,memory:/s3dexphost stress -c 4 -m 1 --vm-bytes 8g
+```
+
+Limiting CPU and memory
 ```bash
 sudo apt install cgroup-bin cgroup-lite cgroup-tools cgroupfs-mount libcgroup1
 
+# create cgroup (users of group fast20 can create processes under the cgroup)
+sudo cgcreate -t zf:fast20 -g cpuset,memory:/s3dexphost
+
+# fix to cpu cores
+sudo cgset -r cpuset.mems=0 s3dexphost
+sudo cgset -r cpuset.cpus=0,1,2,3 s3dexphost
+# fix memory upper limit
+sudo cgset -r memory.limit_in_bytes=16g s3dexphost
+```
+
+Limiting block IO
+```bash
 sudo cgcreate -t zf:zf -g blkio:/s3dexp
 # Find major and minor number by `cat /proc/partitions` or `ls -l /dev/sdc`
 echo "8:32 482344960" | sudo tee /sys/fs/cgroup/blkio/s3dexp/blkio.throttle.read_bps_device
