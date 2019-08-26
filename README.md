@@ -43,6 +43,7 @@ Smart SSD image processing
     ```
     3. Activate: `conda activate s3dexp`
     4. Install changes of Python code to conda env: `make install`
+* Jupyter notebook server: http://cloudlet015.elijah.cs.cmu.edu:8888 (ask me for password)
 
 
 ## Clearing OS page cache before running experiments
@@ -52,15 +53,12 @@ For all experiments that measures disk read times, make sure to run this before 
 make clear-page
 ```
 
-## Running our custom FUSE on top of ram disk
+## Create a RAM disk to hold PPM files
 
 ```bash
-make fuse-up    # will call `make brd-up`
-
-# tear down
-make fuse-down  # only unmount the FUSE; ram disk persists
-# or:
-make fuse-down brd-down   # this tears down the ram disk too
+make brd-up
+# remove it
+make brd-down
 ```
 
 ## cgroup
@@ -132,3 +130,5 @@ JPEG decode (input in RAM):
 OpenCV (officitial `opencv`)  ~=  PIL ~= 210
 
 OpenCV (unofficial `opencv-contribe-python`) = 350 (uses libjpeg-turbo)
+
+`cv2.imread()` returns a numpy array of `.shape=(H, W, 3)`. `PIL.Image.open()` returns an `PIL.Image` object with attributes `.height`, `.width` and `.size`. Shell command `file` shows image size in `WxH` format.

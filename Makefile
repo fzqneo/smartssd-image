@@ -14,14 +14,14 @@ db-backup:
 fuse-build:
 	(cd fuse; make)
 
-fuse-up: fuse-build brd-up
-	@(if [ ! -z "$(shell mount -t fuse.bbfs)" ]; then \
-		echo "fuse.bbfs already up at $(shell mount -t fuse.bbfs) !" >&2; exit 1; \
-	fi)
-	fuse/src/bbfs /mnt/ramdisk/ $(FUSE_MOUNTDIR)
+# fuse-up: fuse-build brd-up
+# 	@(if [ ! -z "$(shell mount -t fuse.bbfs)" ]; then \
+# 		echo "fuse.bbfs already up at $(shell mount -t fuse.bbfs) !" >&2; exit 1; \
+# 	fi)
+# 	fuse/src/bbfs /mnt/ramdisk/ $(FUSE_MOUNTDIR)
 	
-fuse-down:
-	fusermount -u $(FUSE_MOUNTDIR)
+# fuse-down:
+# 	fusermount -u $(FUSE_MOUNTDIR)
 
 brd-up:
 	@(if [ ! -z "$(shell find /dev -type b -name 'ram*' )" ]; then \
