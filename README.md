@@ -1,5 +1,4 @@
-# smartssd-image
-Smart SSD image processing
+Smart Disk image processing
 
 **FAST'20 submission deadline: 9/26/2019**
 
@@ -50,7 +49,7 @@ Smart SSD image processing
 
 ## Clearing OS page cache before running experiments
 
-For all experiments that include disk read times, make sure to run this before experiment:
+If an experiment includes disk read times, make sure to run this before it:
 ```bash
 make clear-page
 ```
@@ -71,7 +70,7 @@ make brd-down
 Executing a program under cgroup:
 ```bash
 # launch a program under the cgroups, for containers, look at --cgroup-parent 
-sudo cgexec -g cpuset,memory:/s3dexphost stress -c 4 -m 1 --vm-bytes 8g
+cgexec -g cpuset,memory:/s3dexphost stress -c 4 -m 1 --vm-bytes 8g
 ```
 
 Limiting CPU and memory

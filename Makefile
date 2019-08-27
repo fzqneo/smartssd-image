@@ -42,3 +42,15 @@ clear-cache:
 	
 no-turbo:
 	echo 1 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo
+
+cgroup-recreate:
+	sudo cgdelete -g cpuset,memory:/s3dexphost
+	sudo cgcreate -t zf:fast20 -g cpuset,memory:/s3dexphost
+	sudo cgset -r cpuset.mems=0 s3dexphost
+	sudo cgset -r cpuset.cpus=0,1,2,3 s3dexphost
+	sudo cgset -r memory.limit_in_bytes=16g s3dexphost
+	sudo cgdelete -g cpuset,memory:/s3dexpdisk
+	sudo cgcreate -t zf:fast20 -g cpuset,memory:/s3dexpdisk
+	sudo cgset -r cpuset.mems=0 s3dexpdisk
+	sudo cgset -r cpuset.cpus=4,5,6,7 s3dexpdisk
+	sudo cgset -r memory.limit_in_bytes=8g s3dexpdisk
