@@ -51,7 +51,7 @@ Smart Disk image processing
 
 If an experiment includes disk read times, make sure to run this before it:
 ```bash
-make clear-page
+make drop-cache
 ```
 
 ## Create a RAM disk to hold PPM files
@@ -62,7 +62,9 @@ make brd-up
 make brd-down
 ```
 
-## cgroup
+## Miscellaneous Notes
+
+### cgroup
 
 * cgroup of host: s3dexphost    (4 cores, 16g)
 * cgroup of emulated disk: s3dexpdisk   (4 cores, 8g)
@@ -95,7 +97,7 @@ echo "8:32 482344960" | sudo tee /sys/fs/cgroup/blkio/s3dexp/blkio.throttle.read
 sudo cgexec -g blkio:/s3dexp hdparm -tT /dev/sdc
 ```
 
-## scsi_debug
+### scsi_debug
 
 Set `ndelay=1` to have almost-zero nanoseconds delay. Don't set it to 0. It will disable the parameter.
 
@@ -119,7 +121,7 @@ ls -l /sys/bus/pseudo/drivers/scsi_debug
 
 ```
 
-## ramdisk (brd)
+### ramdisk (brd)
 
 ```bash
 # rd_nr is num of /dev/ramX created. Following will create a 4G (rd_size kB) ramdisk.
@@ -130,23 +132,23 @@ sudo mkfs /dev/ram0 4G
 # sudo rmmod brd
 ```
 
-## monitoring
+### monitoring
 
 ```bash
 iostat -x 1
 ```
 
-## Upgrade Linux kernel version
+### Upgrade Linux kernel version
 scsi_debug + cgroup is buggy on kernel 4.4.0.
 ```bash
 sudo apt install linux-image-4.15.0-54-generic linux-headers-4.15.0-54-generic linux-modules-extra-4.15.0-54-generic
 # sudo reboot
 ```
 
-## tfrecord
+### tfrecord
 https://www.tensorflow.org/tutorials/load_data/tf_records#tfrecords_format_details
 
-## OpenCV vs. PIL
+### OpenCV vs. PIL
 
 JPEG decode (input in RAM): 
 

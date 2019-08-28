@@ -31,16 +31,16 @@ def image_meta(base_dir, ext='jpg'):
     sess.close()
 
     
-def disk_read(base_dir, disk, ext='jpg', sort_inode=False):
+def disk_read(base_dir, disk, ext='jpg', sort_inode=False, store_result=True):
     logger.warn("Make sure you cleaned the OS page buffer!")
     base_dir = os.path.realpath(base_dir)
-
-    sess = dbutils.get_session()
     paths = list(recursive_glob(base_dir, '*.{}'.format(ext)))
 
     if sort_inode:
         paths = sorted(paths, key=lambda p: os.stat(p).st_ino)
         logger.info("Sort by inode num.")
+
+    results = []
 
     for p in paths:
         tic = time.time()
@@ -52,20 +52,30 @@ def disk_read(base_dir, disk, ext='jpg', sort_inode=False):
         elapsed = time.time() - tic
 
         logger.debug("{}: {} bytes {} ms".format(p, len(buf), elapsed * 1000))
+
         vals_dict = {'size': size}
         if sort_inode:
             vals_dict['seq_read_ms'] = elapsed * 1000
         else:
             vals_dict['rand_read_ms'] = elapsed * 1000
 
-        dbutils.insert_or_update_one(
-            sess, models.DiskReadProfile,
-            keys_dict={'path': p, 'disk': disk},
-            vals_dict=vals_dict
-        )
+        results.append({
+            'keys_dict': {'path': p, 'disk': disk},
+            'vals_dict': vals_dict
+        })
 
-    sess.commit()
-    sess.close()
+
+    if store_result:
+        logger.info("Going to write {} results to DB".format(len(results)))
+        sess = dbutils.get_session()
+        for r in results:
+            dbutils.insert_or_update_one(
+                sess, models.DiskReadProfile,
+                keys_dict=r['keys_dict'],
+                vals_dict=r['vals_dict']
+            )
+        sess.commit()
+        sess.close()
 
 
 def decode_time(base_dir, ext='jpg', repeat=3):
