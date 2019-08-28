@@ -62,12 +62,9 @@ make brd-up
 make brd-down
 ```
 
-## Miscellaneous Notes
-
-### cgroup
-
-* cgroup of host: s3dexphost    (4 cores, 16g)
-* cgroup of emulated disk: s3dexpdisk   (4 cores, 8g)
+## Use cgroup to isolate resource of host applications and emulated disk
+* cgroup for host: s3dexphost    (4 cores, 16g)
+* cgroup for emulated disk: s3dexpdisk   (4 cores, 8g)
 
 Executing a program under cgroup:
 ```bash
@@ -75,6 +72,9 @@ Executing a program under cgroup:
 cgexec -g cpuset,memory:/s3dexphost stress -c 4 -m 1 --vm-bytes 8g
 ```
 
+## Miscellaneous Notes
+
+### cgroup
 Limiting CPU and memory
 ```bash
 sudo apt install cgroup-bin cgroup-lite cgroup-tools cgroupfs-mount libcgroup1

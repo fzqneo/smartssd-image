@@ -4,6 +4,7 @@ from logzero import logger
 import numpy as np
 import os
 import PIL.Image as Image
+import random
 import time
 
 import s3dexp.db.utils as dbutils
@@ -39,6 +40,10 @@ def disk_read(base_dir, disk, ext='jpg', sort_inode=False, store_result=True):
     if sort_inode:
         paths = sorted(paths, key=lambda p: os.stat(p).st_ino)
         logger.info("Sort by inode num.")
+    else:
+        # deterministic pseudo-random
+        random.seed(42)
+        random.shuffle(paths)
 
     results = []
 
