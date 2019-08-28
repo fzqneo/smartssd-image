@@ -11,8 +11,8 @@ db-up:
 db-backup:
 	docker exec s3dexp-db /usr/bin/mysqldump -u root --password=${DB_PASSWORD} --all-databases > /mnt/hdd/fast20-mysql-bk/backup-$$(date +%Y%m%d).sql
 
-fuse-build:
-	(cd fuse; make)
+# fuse-build:
+# 	(cd fuse; make)
 
 # fuse-up: fuse-build brd-up
 # 	@(if [ ! -z "$(shell mount -t fuse.bbfs)" ]; then \
