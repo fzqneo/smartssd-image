@@ -9,7 +9,7 @@ db-up:
 	docker-compose up -d
 
 db-backup:
-	docker exec s3dexp-db /usr/bin/mysqldump -u root --password=${DB_PASSWORD} --all-databases > /mnt/hdd/fast20-mysql-bk/backup-$$(date +%Y%m%d).sql
+	docker exec s3dexp-db /usr/bin/mysqldump -u root --password=${DB_PASSWORD} --all-databases > /mnt/ssd2/fast20-mysql-bk/backup-$$(date +%Y%m%d).sql
 
 # fuse-build:
 # 	(cd fuse; make)

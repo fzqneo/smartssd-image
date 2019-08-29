@@ -4,7 +4,7 @@ Smart Disk image processing
 
 ## Todo
 
-- [ ] Profile image decode time in MobileNet/ResNet/Faster-RCNN inference
+- [ ] Profile image decode time vs. end-to-end time in MobileNet/ResNet/Faster-RCNN inference
 - [ ] Determine 3~4 DNN models to be used in the paper
 - [ ] Find or create a PNG data set
 - [ ] Create skeleton of emulated storage API
@@ -28,7 +28,7 @@ Smart Disk image processing
 * Data: /mnt/hdd/fast20/
 
 * MySQL DB for storing results
-    * Web UI: http://cloudlet015.elijah.cs.cmu.edu:8081/
+    * Web UI: http://cloudlet015.elijah.cs.cmu.edu:8081/ 
     * Credentials: /home/zf/git/smartssd-image/.envrc
     * Access DB in Python (see [script/profile_data.py](script/profile_data.py) for example): 
     ```python
@@ -132,7 +132,7 @@ sudo mkfs /dev/ram0 4G
 # sudo rmmod brd
 ```
 
-### monitoring
+### I/O monitoring
 
 ```bash
 iostat -x 1
