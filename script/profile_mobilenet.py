@@ -5,6 +5,8 @@ from logzero import logger
 import numpy as np
 import os
 import s3dexp.config
+import s3dexp.db.utils as dbutils
+import s3dexp.db.models as dbmodles
 from s3dexp.utils import recursive_glob
 import tensorflow as tf
 import time
@@ -17,7 +19,11 @@ from preprocessing.preprocessing_factory import get_preprocessing
 # Reference: https://github.com/tensorflow/models/blob/master/research/slim/slim_walkthrough.ipynb
 
 
-def run(base_dir, ext="jpg"):
+def run(base_dir, ext="jpg", store_results=''):
+
+    if store_results:
+        dbsess = dbutils.get_session()
+
     # Download and uncompress model
     checkpoint_url = "http://download.tensorflow.org/models/mobilenet_v1_1.0_224_2017_06_14.tar.gz"
     checkpoints_dir = s3dexp.config.CKPT_DIR
@@ -54,8 +60,6 @@ def run(base_dir, ext="jpg"):
         logits, _ = network_fn(processed_images)
         probabilities = tf.nn.softmax(logits)
 
-        names = imagenet.create_readable_names_for_imagenet_labels()
-
         # https://github.com/tensorflow/tensorflow/issues/4196
         # https://www.tensorflow.org/programmers_guide/using_gpu
         config = tf.ConfigProto()
@@ -79,17 +83,30 @@ def run(base_dir, ext="jpg"):
 
                 # 1. image decode
                 arr = cv2.imdecode(np.frombuffer(buf, np.int8), cv2.IMREAD_COLOR)
+                h, w = arr.shape[:2]
                 decode_time = time.time() - tic
 
                 # 2. Run inference
                 # resize
                 arr_resized = cv2.resize(arr, (image_size, image_size), interpolation = cv2.INTER_AREA)
                 images = np.expand_dims(arr_resized, 0)
-                predictions = sess.run(probabilities, feed_dict={inputs: images})
+                _ = sess.run(probabilities, feed_dict={inputs: images})
 
                 all_time = time.time() - tic
 
                 logger.debug("Read {:.1f} ms, Decode {:.1f}, Total {:.1f}. {}".format(read_time*1000, decode_time*1000, all_time*1000, path))
+
+                if store_results:
+                    dbutils.insert_or_update_one(
+                        dbsess, dbmodles.AppExp,
+                        keys_dict={'path': path, 'basename': os.path.basename(path), 'expname': 'mobilenet_inference'},
+                        vals_dict={'read_ms': read_time*1000, 'decode_ms': decode_time*1000, 'total_ms': all_time*1000,
+                                    'size': len(buf), 'height': h, 'width': w}
+                    )
+
+    if store_results:
+        dbsess.commit()
+        dbsess.close()
 
 
 if __name__ == '__main__':
