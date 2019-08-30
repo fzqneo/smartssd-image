@@ -63,13 +63,13 @@ make brd-down
 ```
 
 ## Use cgroup to isolate resource of host applications and emulated disk
-* cgroup for host: s3dexphost    (4 cores, 16g)
+* cgroup for host: s3dexphost    (8 cores, 16g)
 * cgroup for emulated disk: s3dexpdisk   (4 cores, 8g)
 
 Executing a program under cgroup:
 ```bash
-# launch a program under the cgroups, for containers, look at --cgroup-parent 
-cgexec -g cpuset,memory:/s3dexphost stress -c 4 -m 1 --vm-bytes 8g
+# launch a program under the cgroups
+cgexec -g cpuset,memory:/s3dexphost python script/profile_mobilenet.py /mnt/hdd/fast20/jpeg/flickr2500 --store_results=True
 ```
 
 ## Miscellaneous Notes

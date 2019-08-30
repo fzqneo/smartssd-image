@@ -21,8 +21,7 @@ from preprocessing.preprocessing_factory import get_preprocessing
 
 def run(base_dir, ext="jpg", store_results=''):
 
-    if store_results:
-        dbsess = dbutils.get_session()
+    results = []
 
     # Download and uncompress model
     checkpoint_url = "http://download.tensorflow.org/models/mobilenet_v1_1.0_224_2017_06_14.tar.gz"
@@ -70,6 +69,10 @@ def run(base_dir, ext="jpg", store_results=''):
             saver = tf.train.Saver()
             saver.restore(sess, checkpoint_path)
 
+            logger.info("Warm up the GPU with a fake image")
+            fakeimages = np.random.randint(0, 256, size=(1, image_size, image_size, 3), dtype=np.uint8)
+            _ = sess.run(probabilities, feed_dict={inputs: fakeimages})
+
             ########################################
             # walk through directory and inference 
             ########################################
@@ -96,15 +99,23 @@ def run(base_dir, ext="jpg", store_results=''):
 
                 logger.debug("Read {:.1f} ms, Decode {:.1f}, Total {:.1f}. {}".format(read_time*1000, decode_time*1000, all_time*1000, path))
 
-                if store_results:
-                    dbutils.insert_or_update_one(
-                        dbsess, dbmodles.AppExp,
-                        keys_dict={'path': path, 'basename': os.path.basename(path), 'expname': 'mobilenet_inference'},
-                        vals_dict={'read_ms': read_time*1000, 'decode_ms': decode_time*1000, 'total_ms': all_time*1000,
-                                    'size': len(buf), 'height': h, 'width': w}
-                    )
+                results.append({
+                    'path': path, 
+                    'read_ms': read_time * 1000, 'decode_ms': decode_time*1000, 'total_ms': all_time*1000,
+                    'size': len(buf), 'height':h, 'width': w
+                })
+
 
     if store_results:
+        logger.info("Writing {} results to DB".format(len(results)))
+        dbsess = dbutils.get_session()
+        for r in results:
+            dbutils.insert_or_update_one(
+                dbsess, dbmodles.AppExp,
+                keys_dict={'path': r['path'], 'basename': os.path.basename(r['path']), 'expname': 'mobilenet_inference'},
+                vals_dict={'read_ms': r['read_ms'], 'decode_ms': r['decode_ms'], 'total_ms': r['total_ms'],
+                            'size': r['size'], 'height': r['height'], 'width': r['width']}
+            )
         dbsess.commit()
         dbsess.close()
 
