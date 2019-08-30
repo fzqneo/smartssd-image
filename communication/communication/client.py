@@ -1,6 +1,6 @@
+from build.gen.communication_pb2 import ClientRequest, GetObjectsRequest
 import logging
 import zmq
-from build.gen.communication_pb2 import ClientRequest, GetObjectsRequest
 
 class Client:
     def __init__(self, named_pipe):
