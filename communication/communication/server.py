@@ -1,3 +1,5 @@
+from build.gen.communication_pb2 import ClientRequest
+from google.protobuf.json_format import MessageToJson
 import logging
 import threading
 import zmq
@@ -18,7 +20,7 @@ class Server:
 
     def stop(self):
         if not self.should_listen:
-            raise Exception("Server not yet started")
+            raise Exception("Server not started")
         self.should_listen = False
         self.thread.join()
 
@@ -35,11 +37,17 @@ class Server:
             #  Wait for next request from client
             events = dict(poller.poll(1000))
             if publisher in events:
-                message = publisher.recv()
-                logging.debug("Received request: %s" % message)
-                #  Send reply back to client
-                publisher.send(b"World")
+                logging.debug("Received request")
+                self.__parse_message(publisher)
             else:
                 logging.debug("No messages received")
 
         logging.debug("Server shutting down")
+
+    def __parse_message(self, publisher):
+        request = ClientRequest()
+        request.ParseFromString(publisher.recv())
+        if request.HasField("get_objects"):
+            publisher.send(b"objects")
+        else:
+            raise Exception("Unrecognized message type: %s" % MessageToJson(request))
