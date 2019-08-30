@@ -1,4 +1,6 @@
-Smart Disk image processing
+Smart Disk for Machine Learning
+
+s3d (previously "Smart SSD", now maybe "Somewhat Smart Spinning Disk"?)
 
 **FAST'20 submission deadline: 9/26/2019**
 
@@ -6,22 +8,39 @@ Smart Disk image processing
 
 ## Todo
 
-- [ ] Create in-process storage emulator (as a Python module)
-- [ ] Profile image decode time vs. end-to-end time in MobileNet/ResNet/Faster-RCNN inference
-- [ ] Determine 3~4 DNN models to be used in the paper
-- [ ] Find or create a PNG data set
-- [ ] Create skeleton of emulated storage API
-- [x] Create cgroup for host and emulated disk
+Emulated Storage:
+- [ ] Create in-process storage emulator (as a Python module) (Edmond)
+- [ ] Create communication stub using ZeroMQ and Protobuf (Haithem)
 - [x] Implement emulated JPEG ASIC that scales decode time based on software decode time
+
+TensorFlow Application:
+- [ ] Profile MobileNet/Inception/ResNet inference + JPEG/PPM + GPU/CPU (Roger)
+- [ ] Profile SSD_MobileNet/FasterRCNN_ResNet inference + JPEG/PPM + GPU/CPU (Shilpa)
+- [ ] Compile TensorFlow with CPU optimization
+
+Infrastructure:
+- [x] Create cgroup for host and emulated disk
 - [x] Store all images' meta info (file name, original file size, image size) to MySQL.
-- [x] Convert and save image in PPM format
-- [x] Benchmark FS and RGB on PPM files
-- [x] Use FUSE to map access to .jpg files to .ppm files
 - [x] Add script to set up ram disk and populate it ppm data set
-- [x] Modify FUSE: (1) Read .jpg from HDD; (2) Read .ppm from ram disk; (3) return PPM data
 - [x] Use alembic to create experiment DB tables
+- [x] Benchmark FS and RGB on PPM files
 - [x] Profile times to read image bytes from disk
 - [x] Profile software JPEG decode time
+
+DiskSim:
+- [ ] DiskSim 4.0 Manual (Edmond)
+
+FUSE:
+- [x] Use FUSE to map access to .jpg files to .ppm files
+- [x] Modify FUSE: (1) Read .jpg from HDD; (2) Read .ppm from ram disk; (3) return PPM data
+
+Data:
+- [ ] Find or create a PNG data set
+- [x] Convert and save image in PPM format
+
+Literature survey:
+- [ ] FAST papers 2005 - 2019. Keyword: smart disk, active disk, disk simulation/emulation (Edmond)
+- [x] Reference numbers of ASIC for JPEG decoding (Shilpa)
 
 
 ## Experiment Infrastructure
@@ -55,7 +74,7 @@ Smart Disk image processing
 ... if an experiment includes disk read times. For example:
 ```bash
 make drop-cache
-cgexec -g cpuset,memory:/s3dexphost python script/profile_mobilenet.py /mnt/hdd/fast20/jpeg/flickr2500 --store_results=True
+cgexec -g cpuset,memory:/s3dexphost python script/profile_mobilenet.py /mnt/hdd/fast20/jpeg/flickr2500
 ```
 
 ## Create a RAM disk to hold PPM files
@@ -73,10 +92,10 @@ make brd-down
 Executing a program under cgroup:
 ```bash
 # launch a program under the cgroups
-cgexec -g cpuset,memory:/s3dexphost python script/profile_mobilenet.py /mnt/hdd/fast20/jpeg/flickr2500 --store_results=True
+cgexec -g cpuset,memory:/s3dexphost python script/profile_mobilenet.py /mnt/hdd/fast20/jpeg/flickr2500 
 ```
 
-## Running TensorFlow CPU
+## Running TensorFlow on CPU
 ```bash
 CUDA_VISIBLE_DEVICES= python ...
 ```
