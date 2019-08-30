@@ -2,8 +2,11 @@ Smart Disk image processing
 
 **FAST'20 submission deadline: 9/26/2019**
 
+![](fast20_arch.png)
+
 ## Todo
 
+- [ ] Create in-process storage emulator (as a Python module)
 - [ ] Profile image decode time vs. end-to-end time in MobileNet/ResNet/Faster-RCNN inference
 - [ ] Determine 3~4 DNN models to be used in the paper
 - [ ] Find or create a PNG data set
@@ -49,9 +52,10 @@ Smart Disk image processing
 
 ## Clearing OS page cache before running experiments
 
-If an experiment includes disk read times, make sure to run this before it:
+... if an experiment includes disk read times. For example:
 ```bash
 make drop-cache
+cgexec -g cpuset,memory:/s3dexphost python script/profile_mobilenet.py /mnt/hdd/fast20/jpeg/flickr2500 --store_results=True
 ```
 
 ## Create a RAM disk to hold PPM files
@@ -71,6 +75,12 @@ Executing a program under cgroup:
 # launch a program under the cgroups
 cgexec -g cpuset,memory:/s3dexphost python script/profile_mobilenet.py /mnt/hdd/fast20/jpeg/flickr2500 --store_results=True
 ```
+
+## Running TensorFlow CPU
+```bash
+CUDA_VISIBLE_DEVICES= python ...
+```
+
 
 ## Miscellaneous Notes
 

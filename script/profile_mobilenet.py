@@ -21,6 +21,9 @@ from preprocessing.preprocessing_factory import get_preprocessing
 
 def run(base_dir, ext="jpg", store_results=''):
 
+    using_gpu = tf.test.is_gpu_available()
+    logger.warn("Running on {}".format('GPU' if using_gpu else 'CPU'))
+
     results = []
 
     # Download and uncompress model
@@ -112,7 +115,8 @@ def run(base_dir, ext="jpg", store_results=''):
         for r in results:
             dbutils.insert_or_update_one(
                 dbsess, dbmodles.AppExp,
-                keys_dict={'path': r['path'], 'basename': os.path.basename(r['path']), 'expname': 'mobilenet_inference'},
+                keys_dict={'path': r['path'], 'basename': os.path.basename(r['path']), 
+                            'expname': 'mobilenet_inference', 'device': 'gpu' if using_gpu else 'cpu'},
                 vals_dict={'read_ms': r['read_ms'], 'decode_ms': r['decode_ms'], 'total_ms': r['total_ms'],
                             'size': r['size'], 'height': r['height'], 'width': r['width']}
             )

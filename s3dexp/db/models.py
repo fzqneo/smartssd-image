@@ -39,6 +39,7 @@ class AppExp(Base):
     expname = sa.Column(sa.String(1024), nullable=False)
     path = sa.Column(sa.String(1024), nullable=False)
     basename = sa.Column(sa.String(1024), nullable=False)
+    device = sa.Column(sa.String(32), nullable=False)
     disk = sa.Column(sa.String(32))
     read_ms = sa.Column(sa.Float(53))
     decode_ms = sa.Column(sa.Float(53))
