@@ -22,7 +22,12 @@ from preprocessing.preprocessing_factory import get_preprocessing
 def run(base_dir, ext="jpg", store_results=''):
 
     using_gpu = tf.test.is_gpu_available()
-    logger.warn("Running on {}".format('GPU' if using_gpu else 'CPU'))
+    if using_gpu:
+        logger.info("Running on GPU")
+    else:
+        from tensorflow.python.framework import test_util as tftest_util
+        assert tftest_util.IsMklEnabled(), "This tensorflow is not compiled with MKL. Abort."
+        logger.warn("Running on CPU")
 
     results = []
 

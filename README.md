@@ -91,13 +91,15 @@ make brd-down
 
 Executing a program under cgroup:
 ```bash
-# launch a program under the cgroups
 cgexec -g cpuset,memory:/s3dexphost python script/profile_mobilenet.py /mnt/hdd/fast20/jpeg/flickr2500 
 ```
 
-## Running TensorFlow on CPU
+## Running MKL-enabled TensorFlow on CPU (conda env: s3dexp-mkl)
+Because CUDA and MKL cannot coexist in TensorFlow. I have to make two different conda envs.
 ```bash
-CUDA_VISIBLE_DEVICES= python ...
+conda deactivate
+conda activate s3dexp-mkl
+python ...
 ```
 
 
