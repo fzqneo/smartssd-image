@@ -10,10 +10,11 @@ s3d (previously "Smart SSD", now maybe "Somewhat Smart Spinning Disk"?)
 
 Emulated Storage:
 - [ ] Create in-process storage emulator (as a Python module) (Edmond)
-- [ ] Create communication stub using ZeroMQ and Protobuf (Haithem)
+- [x] Create communication stub using ZeroMQ and Protobuf (Haithem)
 - [x] Implement emulated JPEG ASIC that scales decode time based on software decode time
 
 TensorFlow Application:
+- [ ] Create batching example using tf.data.Dataset (Edmond)
 - [ ] Profile MobileNet/Inception/ResNet inference + JPEG/PPM + GPU/CPU (Roger)
 - [ ] Profile SSD_MobileNet/FasterRCNN_ResNet inference + JPEG/PPM + GPU/CPU (Shilpa)
 - [ ] Compile TensorFlow with CPU optimization
@@ -105,6 +106,13 @@ python ...
 
 ## Miscellaneous Notes
 
+### TensorFlow
+
+* tfrecord: https://www.tensorflow.org/tutorials/load_data/tf_records#tfrecords_format_details
+* Example of batching with tf.data.Dataset in eager mode: https://www.tensorflow.org/tutorials/load_data/images
+* tf.data.Dataset version 1.13 Doc: https://www.tensorflow.org/versions/r1.13/api_docs/python/tf/data/Dataset
+* Data input pipeline performance optimization: https://www.tensorflow.org/guide/performance/datasets
+
 ### cgroup
 Limiting CPU and memory
 ```bash
@@ -176,8 +184,6 @@ sudo apt install linux-image-4.15.0-54-generic linux-headers-4.15.0-54-generic l
 # sudo reboot
 ```
 
-### tfrecord
-https://www.tensorflow.org/tutorials/load_data/tf_records#tfrecords_format_details
 
 ### OpenCV vs. PIL
 

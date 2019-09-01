@@ -7,6 +7,10 @@ import os
 import s3dexp.config
 import s3dexp.db.utils as dbutils
 import s3dexp.db.models as dbmodles
+from s3dexp.em.emcpu import ProcessDilator
+from s3dexp.em.emdecoder import EmDecoder
+from s3dexp.em.emdisk import RealDisk
+from s3dexp.em.emsmart import EmSmartStorage, LocalClient
 from s3dexp.utils import recursive_glob
 import tensorflow as tf
 import time
@@ -19,7 +23,14 @@ from preprocessing.preprocessing_factory import get_preprocessing
 # Reference: https://github.com/tensorflow/models/blob/master/research/slim/slim_walkthrough.ipynb
 
 
-def run(base_dir, ext="jpg", store_results=''):
+def run(base_dir, ext="jpg", store_results='', smart=False):
+
+    if smart:
+        ss = EmSmartStorage(
+            dilator=ProcessDilator(1.0),
+            emdecoder=EmDecoder(300, '/mnt/hdd/fast20/jpeg/', '/mnt/ramdisk/'),
+            emdisk=RealDisk())
+        smart_client = LocalClient(ss) 
 
     using_gpu = tf.test.is_gpu_available()
     if using_gpu:
@@ -77,7 +88,7 @@ def run(base_dir, ext="jpg", store_results=''):
             saver = tf.train.Saver()
             saver.restore(sess, checkpoint_path)
 
-            logger.info("Warm up the GPU with a fake image")
+            logger.info("Warm up with a fake image")
             fakeimages = np.random.randint(0, 256, size=(1, image_size, image_size, 3), dtype=np.uint8)
             _ = sess.run(probabilities, feed_dict={inputs: fakeimages})
 
@@ -87,15 +98,22 @@ def run(base_dir, ext="jpg", store_results=''):
             for path in recursive_glob(base_dir, "*.{}".format(ext)):
                 tic = time.time()
 
-                # 0. read from disk
-                with open(path, 'rb') as f:
-                    buf = f.read()
-                read_time = time.time() - tic
+                if not smart:
+                    # 0. read from disk
+                    with open(path, 'rb') as f:
+                        buf = f.read()
+                    read_time = time.time() - tic
 
-                # 1. image decode
-                arr = cv2.imdecode(np.frombuffer(buf, np.int8), cv2.IMREAD_COLOR)
+                    # 1. image decode
+                    arr = cv2.imdecode(np.frombuffer(buf, np.int8), cv2.IMREAD_COLOR)
+                    decode_time = time.time() - tic
+                else:
+                    arr = smart_client.get_decode(path)
+                    buf = '' # not used
+                    read_time = 0 # not used
+                    decode_time = time.time() - tic
+
                 h, w = arr.shape[:2]
-                decode_time = time.time() - tic
 
                 # 2. Run inference
                 # resize
@@ -118,10 +136,14 @@ def run(base_dir, ext="jpg", store_results=''):
         logger.info("Writing {} results to DB".format(len(results)))
         dbsess = dbutils.get_session()
         for r in results:
+            keys_dict={'path': r['path'], 'basename': os.path.basename(r['path']), 
+                        'expname': 'mobilenet_inference', 
+                        'device': 'gpu' if using_gpu else 'cpu',
+                        'disk': 'smart' if smart else 'hdd'}
+            
             dbutils.insert_or_update_one(
                 dbsess, dbmodles.AppExp,
-                keys_dict={'path': r['path'], 'basename': os.path.basename(r['path']), 
-                            'expname': 'mobilenet_inference', 'device': 'gpu' if using_gpu else 'cpu'},
+                keys_dict=keys_dict,
                 vals_dict={'read_ms': r['read_ms'], 'decode_ms': r['decode_ms'], 'total_ms': r['total_ms'],
                             'size': r['size'], 'height': r['height'], 'width': r['width']}
             )
