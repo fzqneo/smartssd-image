@@ -7,10 +7,6 @@ import os
 import s3dexp.config
 import s3dexp.db.utils as dbutils
 import s3dexp.db.models as dbmodles
-from s3dexp.em.emcpu import ProcessDilator
-from s3dexp.em.emdecoder import EmDecoder
-from s3dexp.em.emdisk import RealDisk
-from s3dexp.em.emsmart import EmSmartStorage, LocalClient
 from s3dexp.utils import recursive_glob
 import tensorflow as tf
 import time
@@ -59,13 +55,8 @@ def run(base_dir, ext="jpg", store_results='', smart=False, batch_size=8, num_pa
             image_resize = tf.image.resize_images(image, (image_size, image_size))
             return image_resize  # Tensor
     else:
-        # TODO use our smart storage here
-        ss = EmSmartStorage(
-            dilator=ProcessDilator(1.0),
-            emdecoder=EmDecoder(300, '/mnt/hdd/fast20/jpeg/', '/mnt/ramdisk/'),
-            emdisk=RealDisk())
-        smart_client = LocalClient(ss)         
-
+        # TODO use our smart storage here      
+        raise NotImplementedError
         def load_and_preprocess_fn(path):
             def smart_fn(path):
                 # this pure Python funciton will actually be called many times, by multiple threads if num_parallel_calls>1

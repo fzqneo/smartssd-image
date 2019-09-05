@@ -7,10 +7,6 @@ import os
 import s3dexp.config
 import s3dexp.db.utils as dbutils
 import s3dexp.db.models as dbmodles
-from s3dexp.em.emcpu import ProcessDilator
-from s3dexp.em.emdecoder import EmDecoder
-from s3dexp.em.emdisk import RealDisk
-from s3dexp.em.emsmart import EmSmartStorage, LocalClient
 from s3dexp.utils import recursive_glob
 import tensorflow as tf
 import time
@@ -24,13 +20,8 @@ from preprocessing.preprocessing_factory import get_preprocessing
 
 
 def run(base_dir, ext="jpg", store_results='', smart=False):
-
     if smart:
-        ss = EmSmartStorage(
-            dilator=ProcessDilator(1.0),
-            emdecoder=EmDecoder(300, '/mnt/hdd/fast20/jpeg/', '/mnt/ramdisk/'),
-            emdisk=RealDisk())
-        smart_client = LocalClient(ss) 
+        raise NotImplementedError
 
     using_gpu = tf.test.is_gpu_available()
     if using_gpu:
@@ -108,10 +99,7 @@ def run(base_dir, ext="jpg", store_results='', smart=False):
                     arr = cv2.imdecode(np.frombuffer(buf, np.int8), cv2.IMREAD_COLOR)
                     decode_time = time.time() - tic
                 else:
-                    arr = smart_client.get_decode(path)
-                    buf = '' # not used
-                    read_time = 0 # not used
-                    decode_time = time.time() - tic
+                    raise NotImplementedError
 
                 h, w = arr.shape[:2]
 
