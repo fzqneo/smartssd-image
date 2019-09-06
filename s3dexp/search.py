@@ -1,12 +1,14 @@
 from logzero import logger
 import multiprocessing as mp
 import numpy as np
+import time
+import os
 
 class Item(object):
     def __init__(self, src):
         super(Item, self).__init__()
         self._attrs = dict()
-        assert isinstance(src, [str, unicode])
+        assert isinstance(src, (str, unicode))
         self._attrs['_src'] = src
 
     @property
@@ -27,7 +29,7 @@ class Item(object):
 
     @array.setter 
     def array(self, v):
-        assert isinstance(v, np.ndarray)
+        assert isinstance(v, np.ndarray), "Expect numpy array, got {}".format(type(v))
         self._attrs['_array'] = v
 
     def __getitem__(self, key):
@@ -65,45 +67,75 @@ class FilterConfig(object):
         return self.filter_cls(*self.args, **self.kwargs)
 
 
-def search_work(filter_configs, q, stats):
-    assert isinstance(q, mp.JoinableQueue)
-    filters = map(filter_configs, lambda fc: fc.instantiate())
-    map(map(filter, str), logger.info)
+class Context(object):
+    """Shared data structure by multi processes. Not for heavy weight use."""
+    def __init__(self, manager):
+        super(Context, self).__init__()
+        self.lock = manager.Lock()
+        self.q = manager.JoinableQueue(1000)
+        self.stats = manager.dict(
+            num_items=0,
+            num_workers=0,
+            cpu_time=0.,
+        )
+
+
+def search_work(filter_configs, context):
+    assert isinstance(context, Context)
+    logger.info("[Worker {}] started".format(os.getpid()))
+    filters = map(lambda fc: fc.instantiate(), filter_configs)
+    map(logger.info, map(str, filters))
+
+    tic_cpu = time.clock()
+    count = 0
 
     try:
         while True:
-            src = q.get()
+            src = context.q.get()
             try:
                 if src is not None:
                     item = Item(src)
                     for f in filters:
                         f(item)
                     del item
+                    count += 1
                 else:
+                    logger.info("[Worker {}] terminating on receiving None ".format(os.getpid()))
                     break
+            except Exception as e:
+                logger.error("Exception on {}".format(src))
+                logger.exception(e)
             finally:
-                q.task_done()
+                context.q.task_done()
     finally:
-        pass
+        elapsed_cpu = time.clock() - tic_cpu
+        logger.info("[Worker {}] writing stats: {}".format(os.getpid(), str((count, elapsed_cpu))))
+        with context.lock:
+            context.stats['num_workers'] += 1
+            context.stats['num_items'] += count
+            context.stats['cpu_time'] += elapsed_cpu
 
     
-def run_search(filter_configs, num_workers, path_list_or_gen):
-    # TODO add statistics
-    q = mp.JoinableQueue(maxsize=100)
+def run_search(filter_configs, num_workers, path_list_or_gen, context):
     workers = []
     for i in range(num_workers):
-        w = mp.Process(target=search_work, args=(filter_configs, q, None), name='worker-'+i)
+        w = mp.Process(target=search_work, args=(filter_configs, context), name='worker-{}'.format(i))
         w.daemon = True
         w.start()
         workers.append(w)
 
     for path in path_list_or_gen:
-        q.put(path)
+        logger.debug("Enque'ing {}".format(path))
+        context.q.put(path)
+    # push None as sentinel
+    for _ in workers:
+        context.q.put(None)
 
     logger.info("All items pushed. Waiting for search to finish.")
-    q.join()
+    context.q.join()
+
     for w in workers:
         try:
-            w.terminate()
+            w.join(5)
         except:
             logger.warn("Fail to terminate {}".format(w.name))

@@ -1,0 +1,8 @@
+expname: simple_read_decode
+
+filters:
+  -
+    filter: SimpleReadFilter
+  -
+    filter: DecodeFilter
+    

@@ -11,11 +11,6 @@ class DecodeFilter(Filter):
         super(DecodeFilter, self).__init__()
 
     def __call__(self, item):
-        try:
-            bgr = cv2.imdecode(np.frombuffer(item.data, np.int8), cv2.IMREAD_COLOR)
-            item.array = bgr
-            return True
-        except Exception as e:
-            logger.exception(e)
-        else:
-            return False
+        bgr = cv2.imdecode(np.frombuffer(item.data, np.int8), cv2.IMREAD_COLOR)
+        item.array = bgr
+        return True

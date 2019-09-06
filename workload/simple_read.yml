@@ -1,0 +1,6 @@
+expname: simple_read
+
+filters:
+  -
+    filter: SimpleReadFilter
+    

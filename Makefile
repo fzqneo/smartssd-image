@@ -47,10 +47,10 @@ cgroup-recreate:
 	sudo cgdelete -g cpuset,memory:/s3dexphost || true
 	sudo cgcreate -t zf:fast20 -g cpuset,memory:/s3dexphost
 	sudo cgset -r cpuset.mems=0 s3dexphost
-	sudo cgset -r cpuset.cpus=0-3,8-11 s3dexphost
-	sudo cgset -r memory.limit_in_bytes=16g s3dexphost
+	sudo cgset -r cpuset.cpus=0-17,54-71 s3dexphost
+	sudo cgset -r memory.limit_in_bytes=64g s3dexphost
 	sudo cgdelete -g cpuset,memory:/s3dexpdisk || true
 	sudo cgcreate -t zf:fast20 -g cpuset,memory:/s3dexpdisk
-	sudo cgset -r cpuset.mems=0 s3dexpdisk
-	sudo cgset -r cpuset.cpus=4-7 s3dexpdisk
-	sudo cgset -r memory.limit_in_bytes=8g s3dexpdisk
+	sudo cgset -r cpuset.mems=1 s3dexpdisk
+	sudo cgset -r cpuset.cpus=18-35 s3dexpdisk
+	sudo cgset -r memory.limit_in_bytes=32g s3dexpdisk

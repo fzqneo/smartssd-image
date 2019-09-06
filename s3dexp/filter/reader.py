@@ -1,11 +1,12 @@
-from io import BytesIO
+from logzero import logger
 import os
+
 from s3dexp.search import Filter
 
 
-class SimpleReaderFilter(Filter):
+class SimpleReadFilter(Filter):
     def __init__(self):
-        super(SimpleReaderFilter, self).__init__()
+        super(SimpleReadFilter, self).__init__()
 
     def __call__(self, item):
         p = item.src
@@ -14,3 +15,5 @@ class SimpleReaderFilter(Filter):
         buf = os.read(fd, size)
         os.close(fd)        
         item.data = buf
+        logger.debug("Read {}, {} bytes".format(p, len(item.data)))
+

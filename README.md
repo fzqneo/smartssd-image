@@ -2,7 +2,7 @@ Smart Disk for Machine Learning
 
 s3d (previously "Smart SSD", now maybe "Somewhat Smart Spinning Disk"?)
 
-Cloning: `
+Cloning: `git clone --recursive git@github.com:fzqneo/smartssd-image.git`
 
 **FAST'20 submission deadline: 9/26/2019**
 
@@ -11,20 +11,21 @@ Cloning: `
 ## Todo
 
 Emulated Storage:
+- [ ] Client/Server communication between application and emulated storage over 0MQ+ipc:// (Haithem)
 - [ ] Basic simulator framework based on event queue (Edmond)
-- [ ] Separate simulator and emulator logic (Edmond)
 - [x] Create communication stub using ZeroMQ and Protobuf (Haithem)
 - [x] Implement emulated JPEG ASIC that scales decode time based on software decode time
 
 Applications:
-- [ ] Perceptual hashing
-- [ ] Background subtraction
-- [ ] Simple image filtering framework (Edmond)
+- [ ] Find a few more filters from related papers
+- [ ] RGB hist 2D filter, background subtraction filter, perceptual hashing filter (Shilpa)
+- [x] Simple file reader, OpenCV decoder, and RGB hist 1D as filters (Edmond)
+- [x] Simple Eureka-ish filtering framework (Edmond)
 - [x] RGB color histogram (Edmond)
 
 TensorFlow Application:
-- [ ] 10-layer ResNet. Refer to [BlazeIt](https://arxiv.org/abs/1805.01046)
-- [ ] MobileNet inference.
+- [ ] 10-layer ResNet. Refer to [BlazeIt](https://arxiv.org/abs/1805.01046) (Roger)
+- [x] MobileNet inference (Edmond)
 - [x] Create batching example using tf.data.Dataset (Edmond)
 - [x] Install MKL-enabled TensorFlow
 
@@ -79,13 +80,23 @@ Literature survey:
 * Jupyter notebook server: http://cloudlet015.elijah.cs.cmu.edu:8888 (ask me for password)
 
 
-## Clearing OS page cache before running experiments
+## Run `make drop-cache` before running experiments
 
-... if an experiment includes disk read times. For example:
+... if an experiment includes disk read times. This clears the OS page cache.
+
+## Running Eureka-ish image filtering
+
 ```bash
-make drop-cache
-cgexec -g cpuset,memory:/s3dexphost python script/profile_mobilenet.py /mnt/hdd/fast20/jpeg/flickr2500
+python script/search_driver.py workload/simple_read_decode.yml /mnt/hdd/fast20/jpeg/flickr2500 --num_workers=16
 ```
+
+See workload/*.yml about how to define a workload.
+
+## Running TensorFlow batch inference
+```bash
+python script/profile_mobilenet_batch.py /mnt/hdd/fast20/jpeg/flickr2500  --batch_size=64 
+```
+
 
 ## Create a RAM disk to hold PPM files
 
@@ -95,11 +106,10 @@ make brd-up
 make brd-down
 ```
 
-## Use cgroup to isolate resource of host applications and emulated disk
+## Run programs under cgroup to isolate resource
 * cgroup for host: s3dexphost    (8 cores, 16g)
 * cgroup for emulated disk: s3dexpdisk   (4 cores, 8g)
 
-Executing a program under cgroup:
 ```bash
 cgexec -g cpuset,memory:/s3dexphost python script/profile_mobilenet.py /mnt/hdd/fast20/jpeg/flickr2500 
 ```
