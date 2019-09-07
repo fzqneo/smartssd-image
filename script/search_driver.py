@@ -17,11 +17,12 @@ from s3dexp.utils import recursive_glob
 
 logzero.loglevel(logging.INFO)
 
-def run(search_file, base_dir, ext='jpg', num_workers=36, expname_append='', store_result=False):
+def run(search_file, base_dir, ext='jpg', num_workers=36, expname_append='', store_result=False, expname=None):
     with open(search_file, 'r') as f:
         search_conf = yaml.load(f)
 
-    expname = search_conf['expname']
+    if not expname:
+        expname = search_conf['expname']
     expname = expname + expname_append
     logger.info("Using expname: {}".format(expname))
 

@@ -68,7 +68,7 @@ class FilterConfig(object):
 
 
 class Context(object):
-    """Shared data structure by multi processes. Not for heavy weight use."""
+    """Shared data structure by multi processes. Don't update it too frequently."""
     def __init__(self, manager):
         super(Context, self).__init__()
         self.lock = manager.Lock()
@@ -124,7 +124,9 @@ def run_search(filter_configs, num_workers, path_list_or_gen, context):
         w.start()
         workers.append(w)
 
-    for path in path_list_or_gen:
+    for i, path in enumerate(path_list_or_gen):
+        if i % 1000 == 0:
+            logger.info("Enque'd {} items".format(i))
         logger.debug("Enque'ing {}".format(path))
         context.q.put(path)
     # push None as sentinel
