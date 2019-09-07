@@ -8,7 +8,6 @@ class EventQueue(object):
     def __init__(self):
         super(EventQueue, self).__init__()
         self.h = list()
-        heapq.heapify(self.h)
 
     def push(self, timestamp, event):
         heapq.heappush(self.h, (timestamp, event))

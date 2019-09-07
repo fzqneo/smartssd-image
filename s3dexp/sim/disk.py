@@ -1,3 +1,5 @@
+import simpy
+
 class DiskSim(object):
     def read(self, arrival_time, path):
         # TODO just a stub

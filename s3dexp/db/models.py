@@ -47,3 +47,17 @@ class AppExp(Base):
     size = sa.Column(sa.Integer)
     width = sa.Column(sa.Integer)
     height = sa.Column(sa.Integer)
+
+
+class EurekaExp(Base):
+    __tablename__ = 'EurekaExp'
+    id = sa.Column(sa.Integer, primary_key=True)
+    expname = sa.Column(sa.String(1024), nullable=False)
+    basedir = sa.Column(sa.String(1024), nullable=False)
+    num_workers = sa.Column(sa.Integer, nullable=False)
+    ext = sa.Column(sa.String(20))
+    num_items = sa.Column(sa.Integer)
+    avg_wall_ms = sa.Column(sa.Float(53))
+    avg_cpu_ms = sa.Column(sa.Float(53))
+    avg_mbyteps = sa.Column(sa.Float(53))
+    peak_mbyteps = sa.Column(sa.Float(53))

@@ -1,6 +1,7 @@
 import cv2
 import fire
 from logzero import logger
+import multiprocessing as mp
 import numpy as np
 import os
 import PIL.Image as Image
@@ -12,14 +13,20 @@ import s3dexp.db.models as models
 from s3dexp.utils import recursive_glob
 
 
-def image_meta(base_dir, ext='jpg'):
-    sess = dbutils.get_session()
+def _get_meta(path):
+    size = os.path.getsize(path)
+    img = Image.open(path)
+    width, height = img.width, img.height
+    format = img.format
+    return (path, format, size, width, height)
 
-    for path in recursive_glob(base_dir, '*.{}'.format(ext)):
-        size = os.path.getsize(path)
-        img = Image.open(path)
-        width, height = img.width, img.height
-        format = img.format
+
+def image_meta(base_dir, ext='jpg', num_workers=16):
+    sess = dbutils.get_session()
+    
+    pool = mp.Pool(num_workers)
+
+    for path, format, size, width, height in pool.imap(_get_meta, recursive_glob(base_dir, '*.{}'.format(ext)), 64):
         dbutils.insert_or_update_one(
             sess, models.ImageMeta,
             {'path': path},
