@@ -27,10 +27,10 @@ brd-up:
 	@(if [ ! -z "$(shell find /dev -type b -name 'ram*' )" ]; then \
 		echo "ramdisk already up at $(shell find /dev -type b -name 'ram*' ) !" >&2; \
 	else \
-		sudo modprobe brd rd_nr=1 rd_size=4194304 max_part=0; \
-		sudo mkfs /dev/ram0 4G; \
+		sudo modprobe brd rd_nr=1 rd_size=67108864 max_part=0; \
+		sudo mkfs /dev/ram0 64G; \
 		sudo mount /dev/ram0 /mnt/ramdisk; \
-		sudo rsync -a --stats ${PPM_DIR}/ /mnt/ramdisk; \
+		sudo rsync -a --stats /mnt/hdd/fast20/ /mnt/ramdisk; \
 	fi)
 
 brd-down:
@@ -47,10 +47,10 @@ cgroup-recreate:
 	sudo cgdelete -g cpuset,memory:/s3dexphost || true
 	sudo cgcreate -t zf:fast20 -g cpuset,memory:/s3dexphost
 	sudo cgset -r cpuset.mems=0 s3dexphost
-	sudo cgset -r cpuset.cpus=0-17,36-53 s3dexphost
+	sudo cgset -r cpuset.cpus=0-3 s3dexphost
 	sudo cgset -r memory.limit_in_bytes=62g s3dexphost
-	sudo cgdelete -g cpuset,memory:/s3dexpdisk || true
-	sudo cgcreate -t zf:fast20 -g cpuset,memory:/s3dexpdisk
-	sudo cgset -r cpuset.mems=1 s3dexpdisk
-	sudo cgset -r cpuset.cpus=18-35 s3dexpdisk
-	sudo cgset -r memory.limit_in_bytes=32g s3dexpdisk
+	# sudo cgdelete -g cpuset,memory:/s3dexpdisk || true
+	# sudo cgcreate -t zf:fast20 -g cpuset,memory:/s3dexpdisk
+	# sudo cgset -r cpuset.mems=1 s3dexpdisk
+	# sudo cgset -r cpuset.cpus=18-35 s3dexpdisk
+	# sudo cgset -r memory.limit_in_bytes=32g s3dexpdisk
