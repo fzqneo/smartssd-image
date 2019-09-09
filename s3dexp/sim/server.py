@@ -1,31 +1,16 @@
-from s3dexp.sim.communication_pb2 import ClientRequest
+from s3dexp.sim.communication_pb2 import Request, Response
 from google.protobuf.json_format import MessageToJson
 import logging
-import threading
+import time
 import zmq
 
 
 class Server:
     def __init__(self, named_pipe):
         self.named_pipe = named_pipe
-        self.should_listen = False
-        self.thread = None
 
     def start(self):
-        if self.should_listen:
-            raise Exception("Server already started")
-        self.should_listen = True
-        self.thread = threading.Thread(target=self.__start_inner)
-        self.thread.start()
-
-    def stop(self):
-        if not self.should_listen:
-            raise Exception("Server not started")
-        self.should_listen = False
-        self.thread.join()
-
-    def __start_inner(self):
-        logging.debug("Server listening to named pipe: %s" % self.named_pipe)
+        logging.debug("Server listening at: %s" % self.named_pipe)
         context = zmq.Context()
         publisher = context.socket(zmq.ROUTER)
         publisher.bind("ipc://" + self.named_pipe)
@@ -33,7 +18,7 @@ class Server:
         poller = zmq.Poller()
         poller.register(publisher, zmq.POLLIN)
 
-        while self.should_listen:
+        while True:
             #  Wait for next request from client
             events = dict(poller.poll(1000))
             if publisher in events:
@@ -42,18 +27,18 @@ class Server:
             else:
                 logging.debug("No messages received")
 
-        logging.debug("Server shutting down")
-
     def __parse_message(self, publisher):
         address, empty, data = publisher.recv_multipart()
-        request = ClientRequest()
+        request = Request()
         request.ParseFromString(data)
 
-        if request.HasField("get_objects"):
-            publisher.send_multipart([
-                address,
-                b'',
-                b'objects',
-            ])
-        else:
-            raise Exception("Unrecognized message type: %s" % MessageToJson(request))
+        response = Response()
+        response.request_timestamp = request.timestamp
+        response.completion_timestamp = time.time()
+        response.result = str(request.opcode)
+
+        publisher.send_multipart([
+            address,
+            b'',
+            response.SerializeToString(),
+        ])

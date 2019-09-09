@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-message ClientRequest {
-  oneof message {
-     GetObjectsRequest get_objects = 1;
-  }
-}
-
-message GetObjectsRequest {}

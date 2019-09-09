@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message Request {
+    float timestamp = 1;
+    int32 opcode = 2;
+    string path = 3;
+}
+
+message Response {
+    float request_timestamp = 1;
+    float completion_timestamp = 2;
+    string value = 3;
+}

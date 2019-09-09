@@ -4,6 +4,7 @@ import time
 from s3dexp.sim.decoder import DecoderSim
 from s3dexp.sim.bus import BusSim
 from s3dexp.sim.server import Server
+from s3dexp.sim.communication_pb2 import Request, Response
 
 OP_READONLY = 10
 OP_DECODEONLY = 20

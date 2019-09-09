@@ -1,5 +1,7 @@
-from s3dexp.sim.communication_pb2 import ClientRequest, GetObjectsRequest
+from s3dexp.sim.communication_pb2 import Request, Response
+from google.protobuf.json_format import MessageToJson
 import logging
+import time
 import zmq
 
 class Client:
@@ -22,8 +24,15 @@ class Client:
         self.subscriber.close()
         self.listening = False
 
-    def get_objects(self):
-        request = ClientRequest()
-        request.get_objects.CopyFrom(GetObjectsRequest())
+    def request(self, path, opcode):
+        request = Request()
+        request.path = path
+        request.opcode = opcode
+        request.timestamp = time.time()
         self.subscriber.send(request.SerializeToString())
-        logging.debug("Received response")
+
+        response = Response()
+        response.ParseFromString(self.subscriber.recv())
+
+        logging.debug("Received response %s" % MessageToJson(response))
+        return response
