@@ -9,7 +9,7 @@ class RGBHist1dFilter(Filter):
 
     def __call__(self, item):
         hists = []
-        num_channels = item.array.shape[2]
+        num_channels = item.array.shape[2] if len(item.array.shape) == 3 else 1
         for i in range(num_channels):  # channels
             hist = cv2.calcHist([item.array, ], [i, ], None, [256, ], [0, 256])
             hists.append(hist)
@@ -22,7 +22,7 @@ class RGBHist2dFilter(Filter):
         super(RGBHist2dFilter, self).__init__()
 
     def __call__(self, item):
-        num_channels = item.array.shape[2]
+        num_channels = item.array.shape[2] if len(item.array.shape) == 3 else 1
         if num_channels == 3:
             hists = []
             clr_iter = [i for i in itertools.combinations(range(num_channels),2)]
