@@ -46,6 +46,8 @@ class SmartStorageSim(object):
             request_context {Anything} -- Will be passed to callback when finished
             callback {function} -- Will be called callback(env.now, request) when finished
         """
+        import pdb
+        pdb.set_trace()
         op = request.opcode
         if op == OP_DECODEONLY:
             w,h = yield self.env.process(self.decoder.decode(request.path))
@@ -63,6 +65,8 @@ class SmartStorageSim(object):
         # this is a hack, as we are not supposed to set back the simulator's internal time
         # but it should be ok to do
         self.env._now = timestamp
+        import pdb
+        pdb.set_trace()
         self.env.process(self.serve_request(*args, **kwargs))
 
 
