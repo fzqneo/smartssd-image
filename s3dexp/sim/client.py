@@ -1,4 +1,5 @@
 from s3dexp.sim.communication_pb2 import Request, Response
+from s3dexp.sim.storage import OP_DECODEONLY, OP_DEBUG_WAIT
 from google.protobuf.json_format import MessageToJson
 import logging
 import time
@@ -24,11 +25,21 @@ class Client:
         self.subscriber.close()
         self.listening = False
 
-    def request(self, path, opcode):
+    def decode_only(self, path):
         request = Request()
         request.path = path
-        request.opcode = opcode
+        request.opcode = OP_DECODEONLY
         request.timestamp = time.time()
+        self.send_request(request)
+
+    def debug_wait(self, wait):
+        request = Request()
+        request.wait = wait
+        request.opcode = OP_DEBUG_WAIT
+        request.timestamp = time.time()
+        self.send_request(request)
+
+    def send_request(self, request):
         self.subscriber.send(request.SerializeToString())
 
         response = Response()

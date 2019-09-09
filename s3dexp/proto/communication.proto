@@ -4,6 +4,7 @@ message Request {
     float timestamp = 1;
     int32 opcode = 2;
     string path = 3;
+    int32 wait = 4;
 }
 
 message Response {

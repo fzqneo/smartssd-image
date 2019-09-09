@@ -1,9 +1,11 @@
 import simpy
 import time
+import zmq
+
+from google.protobuf.json_format import MessageToJson
 
 from s3dexp.sim.decoder import DecoderSim
 from s3dexp.sim.bus import BusSim
-from s3dexp.sim.server import Server
 from s3dexp.sim.communication_pb2 import Request, Response
 
 OP_READONLY = 10
@@ -33,7 +35,7 @@ class SmartStorageSim(object):
         self.bus = bus
 
 
-    def serve_request(self, op, request, callback, path, *args, **kwargs):
+    def serve_request(self, request, address, callback):
         """A generator that can be passed into env.process(). 
         Calls env.process() on other components. Simulates how different components
         work together to serve a request.
@@ -44,15 +46,16 @@ class SmartStorageSim(object):
             request_context {Anything} -- Will be passed to callback when finished
             callback {function} -- Will be called callback(env.now, request) when finished
         """
+        op = request.opcode
         if op == OP_DECODEONLY:
-            w,h = yield self.env.process(self.decoder.decode(path))
+            w,h = yield self.env.process(self.decoder.decode(request.path))
             yield self.env.process(self.bus.send(w*h*3))
         elif op == OP_DEBUG_WAIT:
-            yield self.env.timeout(kwargs['wait'])
+            yield self.env.timeout(request.wait)
         else:
             NotImplemented
 
-        callback(env.now, request)
+        callback(env.now, address, request)
         self.env.exit(env.now)
 
     
@@ -76,34 +79,36 @@ if __name__ == "__main__":
 
     path_gen = recursive_glob(base_dir, '*.{}'.format(ext))
 
-    def on_complete(t, request):
-        # (Haithem): send back response to client via 0MQ. Put additional info for replying in `request`.
-        print "Finish on {:.6f}, request: {}".format(t, str(request))
+    def on_complete(t, address, request):
+        response = Response()
+        response.request_timestamp = request.timestamp
+        response.completion_timestamp = t
+        response.result = str(request.opcode)
+
+        print "Sending response %s to address %s" % MessageToJson(response) % address
+        publisher.send_multipart([
+            address,
+            b'',
+            response.SerializeToString(),
+        ])
+        print "Sent response %s to address %s" % MessageToJson(response) % address
 
     pipe_name = "/tmp/s3dexp-comm"
-    server = Server(pipe_name)
-    server.start()
+    context = zmq.Context()
+    publisher = context.socket(zmq.ROUTER)
+    publisher.bind("ipc://" + pipe_name)
+    print "Server listening at: %s" % pipe_name
 
-    tic = time.time()
-    i = 0
-    while time.time() - tic < 10.:  # run for 10 sec
-        # (Haithem): receive real request from 0MQ here. Should use poll.
-        now = time.time()
-        if now - tic > i:
-            # generate a new request about every second, alternating between decode request and wait request
-            if i % 2 == 0:
-                path = next(path_gen)
-                request = {'decode': i}
-                print "Generating decode request {} {} @ {:.6f}".format(i, path, now)
-                ss.sched_request(now, OP_DECODEONLY, request, on_complete, path)
-            else:
-                request = {'wait': i}
-                print "Generating wait request {} @ {:.6f}".format(request, now)
-                ss.sched_request(now, OP_DEBUG_WAIT, request, on_complete, None, wait=2)    # wait for 2 sec
-            i += 1
-        
-        env.run(until=(time.time() + RUN_AHEAD))    # continuously keeps simulation up to real time
+    poller = zmq.Poller()
+    poller.register(publisher, zmq.POLLIN)
 
-    # run till no events pending
-    env.run()
-
+    while True:
+        #  Wait for next request from client
+        events = dict(poller.poll(1000))
+        if publisher in events:
+            print "Received request"
+            address, empty, data = publisher.recv_multipart()
+            request = Request()
+            request.ParseFromString(data)
+            now = time.time()
+            ss.sched_request(now, request, address, on_complete)
