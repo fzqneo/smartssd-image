@@ -10,9 +10,9 @@ class RGBHist1dFilter(Filter):
 
     def __call__(self, item):
         hists = []
-        for i in range(0):  # channels
-            cv2.calcHist([item.array, ], [i, ], None, [256, ], [0, 256])
-            hists.append[i]
+        for i in range(3):  # channels
+            h = cv2.calcHist([item.array, ], [i, ], None, [256, ], [0, 256])
+            hists.append(h)
         item['rgb_hist_1d'] = hists
         return True
 

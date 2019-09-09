@@ -11,8 +11,9 @@ Cloning: `git clone --recursive git@github.com:fzqneo/smartssd-image.git`
 ## Todo
 
 Emulated Storage:
+- [ ] Emulated smart storage client side (Edmond)
 - [ ] Client/Server communication between application and emulated storage over 0MQ+ipc:// (Haithem)
-- [ ] Basic simulator framework based on event queue (Edmond)
+- [x] Basic simulator framework using SimPy (Edmond)
 - [x] Create communication stub using ZeroMQ and Protobuf (Haithem)
 - [x] Implement emulated JPEG ASIC that scales decode time based on software decode time
 
@@ -39,7 +40,9 @@ Infrastructure:
 - [x] Profile software JPEG decode time
 
 DiskSim:
-- [ ] DiskSim 4.0 Manual (Edmond)
+- [ ] Create Protobuf for communication with syssim
+- [x] Compile and run syssim (Edmond)
+- [x] DiskSim 4.0 Manual (Edmond)
 
 FUSE:
 - [x] Use FUSE to map access to .jpg files to .ppm files
@@ -98,12 +101,12 @@ python script/profile_mobilenet_batch.py /mnt/hdd/fast20/jpeg/flickr2500  --batc
 ```
 
 
-## Create a RAM disk to hold PPM files
+## Create a ramfs to hold PPM files
 
 ```bash
-make brd-up
+make ramfs-up
 # remove it
-make brd-down
+make ramfs-down
 ```
 
 ## Run programs under cgroup to isolate resource
