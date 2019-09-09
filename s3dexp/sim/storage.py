@@ -3,6 +3,7 @@ import time
 
 from s3dexp.sim.decoder import DecoderSim
 from s3dexp.sim.bus import BusSim
+from s3dexp.sim.server import Server
 
 OP_READONLY = 10
 OP_DECODEONLY = 20
@@ -78,6 +79,9 @@ if __name__ == "__main__":
         # (Haithem): send back response to client via 0MQ. Put additional info for replying in `request`.
         print "Finish on {:.6f}, request: {}".format(t, str(request))
 
+    pipe_name = "/tmp/s3dexp-comm"
+    server = Server(pipe_name)
+    server.start()
 
     tic = time.time()
     i = 0
@@ -97,7 +101,7 @@ if __name__ == "__main__":
                 ss.sched_request(now, OP_DEBUG_WAIT, request, on_complete, None, wait=2)    # wait for 2 sec
             i += 1
         
-        env.run(until=(time.time() + RUN_AHEAD))    # continuouly keeps simulation up to real time
+        env.run(until=(time.time() + RUN_AHEAD))    # continuously keeps simulation up to real time
 
     # run till no events pending
     env.run()
