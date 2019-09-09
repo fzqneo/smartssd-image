@@ -16,4 +16,5 @@ class SimpleReadFilter(Filter):
         os.close(fd)        
         item.data = buf
         logger.debug("Read {}, {} bytes".format(p, len(item.data)))
+        return True
 
