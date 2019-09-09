@@ -1,0 +1,10 @@
+expname: simple_bgdsubtract
+
+filters:
+  -
+    filter: SimpleReadFilter
+  -
+    filter: DecodeFilter
+  -
+    filter: BackgroundSubtractionFilter
+    

@@ -10,7 +10,9 @@ import yaml
 
 import s3dexp.db.utils as dbutils
 import s3dexp.db.models as dbmodles
+from s3dexp.filter.bgd_subtract import BackgroundSubtractionFilter
 from s3dexp.filter.decoder import DecodeFilter
+from s3dexp.filter.image_hash import ImageHashFilter
 from s3dexp.filter.reader import SimpleReadFilter
 from s3dexp.filter.rgbhist import RGBHist1dFilter, RGBHist2dFilter
 from s3dexp.search import Context, FilterConfig, run_search
