@@ -23,6 +23,17 @@ db-backup:
 # fuse-down:
 # 	fusermount -u $(FUSE_MOUNTDIR)
 
+ramfs-up:
+	@(if [ ! -z "$(shell mount | grep /mnt/ramfs )" ]; then \
+		echo "ramfs already up: $(shell mount | grep /mnt/ramfs)" >&2; \
+	else \
+		sudo mount -t ramfs -o size=16g ramfs /mnt/ramfs && echo "Created ramfs"; \
+		sudo rsync -a --stats /mnt/hdd/fast20/ /mnt/ramfs/; \
+	fi)
+
+ramfs-down:
+	sudo umount /mnt/ramfs
+
 brd-up:
 	@(if [ ! -z "$(shell find /dev -type b -name 'ram*' )" ]; then \
 		echo "ramdisk already up at $(shell find /dev -type b -name 'ram*' ) !" >&2; \

@@ -48,7 +48,8 @@ def run(search_file, base_dir, ext='jpg', num_workers=36, expname_append='', sto
     run_search(filter_configs, num_workers, paths, context)
     elapsed = time.time() - tic
 
-    print context.stats
+    logger.info(str(context.stats))
+    logger.info("Elapsed: {:.3f} s".format(elapsed))
 
     if store_result:
         sess = dbutils.get_session()
