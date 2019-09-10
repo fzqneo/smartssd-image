@@ -30,14 +30,14 @@ class Client:
         request.path = path
         request.opcode = OP_DECODEONLY
         request.timestamp = time.time()
-        self.send_request(request)
+        return self.send_request(request)
 
     def debug_wait(self, wait):
         request = Request()
         request.wait = wait
         request.opcode = OP_DEBUG_WAIT
         request.timestamp = time.time()
-        self.send_request(request)
+        return self.send_request(request)
 
     def send_request(self, request):
         self.subscriber.send(request.SerializeToString())

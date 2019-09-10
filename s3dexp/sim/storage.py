@@ -46,8 +46,6 @@ class SmartStorageSim(object):
             request_context {Anything} -- Will be passed to callback when finished
             callback {function} -- Will be called callback(env.now, request) when finished
         """
-        import pdb
-        pdb.set_trace()
         op = request.opcode
         if op == OP_DECODEONLY:
             w,h = yield self.env.process(self.decoder.decode(request.path))
@@ -57,8 +55,6 @@ class SmartStorageSim(object):
         else:
             NotImplemented
 
-        import pdb
-        pdb.set_trace()
         callback(env.now, address, request)
         self.env.exit(env.now)
 
@@ -81,20 +77,17 @@ if __name__ == "__main__":
     ss = SmartStorageSim(env, decoder, bus)
 
     def on_complete(t, address, request):
-        import pdb
-        pdb.set_trace()
         response = Response()
         response.request_timestamp = request.timestamp
         response.completion_timestamp = t
-        response.result = str(request.opcode)
+        response.value = str(request.opcode)
 
-        print "Sending response %s to address %s" % MessageToJson(response) % address
         publisher.send_multipart([
             address,
             b'',
             response.SerializeToString(),
         ])
-        print "Sent response %s to address %s" % MessageToJson(response) % address
+        print "Sent response %s to address %s" % (MessageToJson(response), address)
 
     pipe_name = "/tmp/s3dexp-comm"
     context = zmq.Context()
@@ -115,4 +108,4 @@ if __name__ == "__main__":
             request.ParseFromString(data)
             now = time.time()
             ss.sched_request(now, request, address, on_complete)
-            env.run(until=(time.time() + RUN_AHEAD))
+        env.run(until=(time.time() + RUN_AHEAD))
