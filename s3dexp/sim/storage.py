@@ -57,6 +57,8 @@ class SmartStorageSim(object):
         else:
             NotImplemented
 
+        import pdb
+        pdb.set_trace()
         callback(env.now, address, request)
         self.env.exit(env.now)
 
@@ -65,14 +67,11 @@ class SmartStorageSim(object):
         # this is a hack, as we are not supposed to set back the simulator's internal time
         # but it should be ok to do
         self.env._now = timestamp
-        import pdb
-        pdb.set_trace()
         self.env.process(self.serve_request(*args, **kwargs))
 
 
 
 if __name__ == "__main__":
-    from s3dexp.utils import recursive_glob
     base_dir = '/mnt/hdd/fast20/jpeg/flickr2500'
     ext = 'jpg'
 
@@ -81,9 +80,9 @@ if __name__ == "__main__":
     bus = BusSim(env, target_mbyteps=1)
     ss = SmartStorageSim(env, decoder, bus)
 
-    path_gen = recursive_glob(base_dir, '*.{}'.format(ext))
-
     def on_complete(t, address, request):
+        import pdb
+        pdb.set_trace()
         response = Response()
         response.request_timestamp = request.timestamp
         response.completion_timestamp = t
@@ -116,3 +115,4 @@ if __name__ == "__main__":
             request.ParseFromString(data)
             now = time.time()
             ss.sched_request(now, request, address, on_complete)
+            env.run(until=(time.time() + RUN_AHEAD))
