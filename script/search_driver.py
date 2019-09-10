@@ -4,10 +4,10 @@ import logzero
 from logzero import logger
 import multiprocessing as mp
 import random
-import socket
 import time
 import yaml
 
+from s3dexp import this_hostname
 import s3dexp.db.utils as dbutils
 import s3dexp.db.models as dbmodles
 from s3dexp.filter.bgd_subtract import BackgroundSubtractionFilter
@@ -58,11 +58,12 @@ def run(search_file, base_dir, ext='jpg', num_workers=36, expname_append='', sto
         dbutils.insert_or_update_one(
             sess, 
             dbmodles.EurekaExp,
-            keys_dict={'expname': expname, 'basedir': base_dir, 'ext': ext, 'num_workers': num_workers, 'hostname': socket.gethostname()},
+            keys_dict={'expname': expname, 'basedir': base_dir, 'ext': ext, 'num_workers': num_workers, 'hostname': this_hostname},
             vals_dict={
                 'num_items': context.stats['num_items'],
                 'avg_wall_ms': 1e3 * elapsed / context.stats['num_items'],
-                'avg_cpu_ms': 1e3 * context.stats['cpu_time'] / context.stats['num_items']
+                'avg_cpu_ms': 1e3 * context.stats['cpu_time'] / context.stats['num_items'],
+                'avg_mbyteps': context.stats['bytes_from_disk'] * 1e-6 / elapsed,
             })
         sess.commit()
         sess.close()

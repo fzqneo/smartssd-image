@@ -1,3 +1,4 @@
+import collections
 from logzero import logger
 import multiprocessing as mp
 import numpy as np
@@ -53,6 +54,11 @@ class Filter(object):
     def __str__(self):
         return self._str
 
+    def set_session_stats(self, dct):
+        # Pass in an external dict for logging session-wide statistics,
+        # e.g., bytes read from (emulated) disk
+        self.session_stats = dct
+
 
 class FilterConfig(object):
     def __init__(self, filter_cls, args=[], kwargs={}):
@@ -61,7 +67,6 @@ class FilterConfig(object):
         self.filter_cls = filter_cls
         self.args = args
         self.kwargs = kwargs
-
 
     def instantiate(self):
         return self.filter_cls(*self.args, **self.kwargs)
@@ -77,6 +82,8 @@ class Context(object):
             num_items=0,
             num_workers=0,
             cpu_time=0.,
+            passed_items=0,
+            bytes_from_disk=0,
         )
 
 
@@ -88,6 +95,11 @@ def search_work(filter_configs, context):
 
     tic_cpu = time.clock()
     count = 0
+    count_passed = 0
+
+    session_stats = collections.defaultdict(float)
+    for f in filters:
+        f.set_session_stats(session_stats)
 
     try:
         while True:
@@ -95,10 +107,15 @@ def search_work(filter_configs, context):
             try:
                 if src is not None:
                     item = Item(src)
+                    passed = True
                     for f in filters:
-                        f(item)
+                        ret = f(item)
+                        passed = passed and ret
+                        if not passed:
+                            break
                     del item
                     count += 1
+                    count_passed += int(passed)
                 else:
                     logger.info("[Worker {}] terminating on receiving None ".format(os.getpid()))
                     break
@@ -114,6 +131,8 @@ def search_work(filter_configs, context):
             context.stats['num_workers'] += 1
             context.stats['num_items'] += count
             context.stats['cpu_time'] += elapsed_cpu
+            context.stats['passed_items'] += count_passed
+            context.stats['bytes_from_disk'] += session_stats['bytes_from_disk']
 
     
 def run_search(filter_configs, num_workers, path_list_or_gen, context):

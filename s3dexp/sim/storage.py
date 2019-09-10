@@ -39,7 +39,7 @@ class SmartStorageSim(object):
         Arguments:
             timestamp {float} -- As returned by time.time()
             op {int} -- Op code
-            request_context {Anything} -- Will be passed to callback when finished
+            request {Anything} -- Will be passed to callback when finished
             callback {function} -- Will be called callback(env.now, request) when finished
         """
         if op == OP_DECODEONLY:

@@ -16,5 +16,6 @@ class SimpleReadFilter(Filter):
         os.close(fd)        
         item.data = buf
         logger.debug("Read {}, {} bytes".format(p, len(item.data)))
+        self.session_stats['bytes_from_disk'] += size
         return True
 

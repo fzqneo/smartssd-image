@@ -19,6 +19,7 @@ Emulated Storage:
 
 Applications:
 - [ ] Find a few more filters from related papers
+- [ ] Add face detection filter
 - [ ] RGB hist 2D filter, background subtraction filter, perceptual hashing filter (Shilpa)
 - [x] Simple file reader, OpenCV decoder, and RGB hist 1D as filters (Edmond)
 - [x] Simple Eureka-ish filtering framework (Edmond)
@@ -53,6 +54,8 @@ Data:
 - [x] Convert and save image in PPM format
 
 Literature survey:
+- [ ] Reference numbers of ASIC for face detection
+- [ ] Reference numbers of ASIC for PNG decoding
 - [ ] FAST papers 2005 - 2019. Keyword: smart disk, active disk, disk simulation/emulation (Edmond)
 - [x] Reference numbers of ASIC for JPEG decoding (Shilpa)
 
@@ -79,7 +82,7 @@ Literature survey:
         - /home/zf/miniconda2/envs
     ```
     3. Activate: `conda activate s3dexp`
-    4. Install changes of Python code to conda env: `make install`
+    4. Install changes of Python code to conda env: `make install` (if you've changed group, you don't need sudo).
 * Jupyter notebook server: http://cloudlet015.elijah.cs.cmu.edu:8888 (ask me for password)
 
 

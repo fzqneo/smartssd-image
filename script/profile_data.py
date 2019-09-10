@@ -8,6 +8,7 @@ import PIL.Image as Image
 import random
 import time
 
+from s3dexp import this_hostname
 import s3dexp.db.utils as dbutils
 import s3dexp.db.models as models
 from s3dexp.utils import recursive_glob
@@ -107,7 +108,7 @@ def decode_time(base_dir, ext='jpg', repeat=3):
         decode_ms = elapsed*1000 / repeat
         size = len(buf)
 
-        keys_dict={'path': path}
+        keys_dict={'path': path, 'hostname': this_hostname}
         vals_dict={
             'basename': os.path.basename(path),
             'size': size,

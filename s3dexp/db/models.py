@@ -31,6 +31,7 @@ class DecodeProfile(Base):
     width = sa.Column(sa.Integer)
     height = sa.Column(sa.Integer)
     decode_ms = sa.Column(sa.Float(53))
+    hostname = sa.Column(sa.String(1024), nullable=False)
     
     
 class AppExp(Base):
