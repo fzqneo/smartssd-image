@@ -46,7 +46,7 @@ class Item(object):
 class Filter(object):
     def __init__(self, *args, **kwargs):
         super(Filter, self).__init__()
-        self._str = "{}({}, {})".format(type(self).__name__, ','.join(args), str(kwargs))
+        self._str = "{}({}, {})".format(type(self).__name__, ','.join(map(str,args)), str(kwargs))
     
     def __call__(self, item):
         raise NotImplementedError

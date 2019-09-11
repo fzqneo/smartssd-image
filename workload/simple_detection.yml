@@ -1,0 +1,12 @@
+expname: simple_detection
+
+filters:
+  -
+    filter: SimpleReadFilter
+  -
+    filter: DecodeFilter
+  -
+    filter: ObjectDetectionFilter
+    kwargs:
+      targets: ["bus"]
+    
