@@ -110,6 +110,6 @@ if __name__ == "__main__":
             address, empty, data = publisher.recv_multipart()
             request = Request()
             request.ParseFromString(data)
-            # assert request.timestamp < time.time(), "Reqeust from future: {} >= {}".format(request.timestamp, time.time())
+            # assert request.timestamp < time.time(), "Request from future: {} >= {}".format(request.timestamp, time.time())
             ss.sched_request(request.timestamp, request, address, on_complete)
         env.run(until=(time.time() + RUN_AHEAD))
