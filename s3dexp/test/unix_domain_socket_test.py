@@ -16,14 +16,20 @@ def client():
         transport.send(small_message)
         transport.recv()
         iterations += 1
-    print "Delay test complete. %d round trips completed in %d seconds" % (iterations, time.time() - t_start)
+
+    elapsed_ms = (time.time() - t_start) * 1000
+    mb_per_s = iterations * 1000 / elapsed_ms / 1024 / 1024
+    print "Delay test complete. %d round trips completed in %f ms (%f MB/s)" % (iterations, elapsed_ms, mb_per_s)
 
     large_message = bytearray(2 * 1024 * 1024 * 1024)
     print "Testing throughput"
     t_start = time.time()
     transport.send(large_message)
     transport.recv()
-    print "Throughput test complete. Large message round trip completed in %d seconds" % (time.time() - t_start)
+
+    elapsed_ms = (time.time() - t_start) * 1000
+    mb_per_s = 2 * 1024 * 1000 / elapsed_ms
+    print "Throughput test complete. Large message round trip completed in %f ms (%f MB/s)" % (elapsed_ms, mb_per_s)
 
 def server():
     pipe_name = "/tmp/s3dexp-comm"
