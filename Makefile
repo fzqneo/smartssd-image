@@ -28,25 +28,28 @@ ramfs-up:
 		echo "ramfs already up: $(shell mount | grep /mnt/ramfs)" >&2; \
 	else \
 		sudo mount -t ramfs -o size=16g ramfs /mnt/ramfs && echo "Created ramfs"; \
-		sudo rsync -a --stats /mnt/hdd/fast20/ /mnt/ramfs/; \
+		sudo rsync -a --stats /mnt/hdd/fast20/ppm /mnt/ramfs/fast20/; \
 	fi)
+
+ramfs-sync:
+	sudo rsync -a --stats /mnt/hdd/fast20/ppm /mnt/ramfs/fast20/;
 
 ramfs-down:
 	sudo umount /mnt/ramfs
 
-brd-up:
-	@(if [ ! -z "$(shell find /dev -type b -name 'ram*' )" ]; then \
-		echo "ramdisk already up at $(shell find /dev -type b -name 'ram*' ) !" >&2; \
-	else \
-		sudo modprobe brd rd_nr=1 rd_size=67108864 max_part=0; \
-		sudo mkfs /dev/ram0 64G; \
-		sudo mount /dev/ram0 /mnt/ramdisk; \
-		sudo rsync -a --stats /mnt/hdd/fast20/ /mnt/ramdisk; \
-	fi)
+# brd-up:
+# 	@(if [ ! -z "$(shell find /dev -type b -name 'ram*' )" ]; then \
+# 		echo "ramdisk already up at $(shell find /dev -type b -name 'ram*' ) !" >&2; \
+# 	else \
+# 		sudo modprobe brd rd_nr=1 rd_size=67108864 max_part=0; \
+# 		sudo mkfs /dev/ram0 64G; \
+# 		sudo mount /dev/ram0 /mnt/ramdisk; \
+# 		sudo rsync -a --stats /mnt/hdd/fast20/ /mnt/ramdisk; \
+# 	fi)
 
-brd-down:
-	sudo umount /mnt/ramdisk
-	sudo rmmod brd
+# brd-down:
+# 	sudo umount /mnt/ramdisk
+# 	sudo rmmod brd
 
 drop-cache:
 	sync; echo 1 | sudo tee /proc/sys/vm/drop_caches
@@ -57,8 +60,8 @@ no-turbo:
 cgroup-recreate:
 	sudo cgdelete -g cpuset,memory:/s3dexphost || true
 	sudo cgcreate -t zf:fast20 -g cpuset,memory:/s3dexphost
-	sudo cgset -r cpuset.mems=0 s3dexphost
-	sudo cgset -r cpuset.cpus=0-3 s3dexphost
+	sudo cgset -r cpuset.mems=1 s3dexphost
+	sudo cgset -r cpuset.cpus=18-19,54-55 s3dexphost
 	sudo cgset -r memory.limit_in_bytes=62g s3dexphost
 	# sudo cgdelete -g cpuset,memory:/s3dexpdisk || true
 	# sudo cgcreate -t zf:fast20 -g cpuset,memory:/s3dexpdisk

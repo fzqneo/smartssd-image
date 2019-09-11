@@ -9,13 +9,15 @@ class SimpleReadFilter(Filter):
         super(SimpleReadFilter, self).__init__()
 
     def __call__(self, item):
-        p = item.src
-        size = os.path.getsize(p)
-        fd = os.open(p, os.O_RDONLY)
-        buf = os.read(fd, size)
-        os.close(fd)        
+        path = item.src
+
+        size = os.path.getsize(path)
+        with open(path, 'r') as f:
+            fd = f.fileno()
+            buf = os.read(fd, size)
+
         item.data = buf
-        logger.debug("Read {}, {} bytes".format(p, len(item.data)))
+        logger.debug("Read {}, {} bytes".format(path, len(item.data)))
         self.session_stats['bytes_from_disk'] += size
         return True
 

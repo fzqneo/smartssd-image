@@ -1,0 +1,8 @@
+expname: smart_rgbhist1d
+
+filters:
+  -
+    filter: SmartDecodeFilter
+  -
+    filter: RGBHist1dFilter
+    

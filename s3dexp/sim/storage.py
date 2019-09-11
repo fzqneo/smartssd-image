@@ -1,8 +1,10 @@
+from google.protobuf.json_format import MessageToJson
+import logging
+import logzero
+from logzero import logger
 import simpy
 import time
 import zmq
-
-from google.protobuf.json_format import MessageToJson
 
 from s3dexp.sim.decoder import DecoderSim
 from s3dexp.sim.bus import BusSim
@@ -14,13 +16,14 @@ OP_READDECODE = 30
 OP_DEBUG_WAIT = 500
 
 # Simulator should run slightly ahead of real time.
-# This number should be just large enough to account for computation in simulator
-# and communication delay to the client,
+# This number should be just large enough to account for computation in simulator,
+# serialization overhead, and communication delay to the client,
 # while not too large to avoid inaccurate simulation of requests issued earlier
-RUN_AHEAD = 2e-5    # 20 microseconds.
+RUN_AHEAD = 0.58e-3  
+
+logzero.loglevel(logging.INFO)
 
 # SimPy reference: https://simpy.readthedocs.io/en/latest/contents.html
-
 class SmartStorageSim(object):
     def __init__(self, env, decoder, bus):
         super(SmartStorageSim, self).__init__()
@@ -48,7 +51,9 @@ class SmartStorageSim(object):
         """
         op = request.opcode
         if op == OP_DECODEONLY:
+            # logger.debug("Starting to decode {} at {}".format(request.path, self.env.now))
             w,h = yield self.env.process(self.decoder.decode(request.path))
+            # logger.debug("Finished decode {} at {}".format(request.path, self.env.now))
             yield self.env.process(self.bus.send(w*h*3))
         elif op == OP_DEBUG_WAIT:
             yield self.env.timeout(request.wait)
@@ -72,8 +77,8 @@ if __name__ == "__main__":
     ext = 'jpg'
 
     env = simpy.Environment(initial_time=time.time())
-    decoder = DecoderSim(env, target_mpixps=1, base_dir=base_dir)   # still able to decode 1 image/s
-    bus = BusSim(env, target_mbyteps=1)
+    decoder = DecoderSim(env, target_mpixps=140, base_dir=base_dir, capacity=4)  
+    bus = BusSim(env, target_mbyteps=2000)
     ss = SmartStorageSim(env, decoder, bus)
 
     def on_complete(t, address, request):
@@ -87,25 +92,24 @@ if __name__ == "__main__":
             b'',
             response.SerializeToString(),
         ])
-        print "Sent response %s to address %s" % (MessageToJson(response), address)
+        logger.debug("Sent response %s to address %s" % (MessageToJson(response), address))
 
     pipe_name = "/tmp/s3dexp-comm"
     context = zmq.Context()
     publisher = context.socket(zmq.ROUTER)
     publisher.bind("ipc://" + pipe_name)
-    print "Server listening at: %s" % pipe_name
+    logger.info("Server listening at: %s" % pipe_name)
 
     poller = zmq.Poller()
     poller.register(publisher, zmq.POLLIN)
 
     while True:
         #  Wait for next request from client
-        events = dict(poller.poll(1000))
+        events = dict(poller.poll(0))
         if publisher in events:
-            print "Received request"
             address, empty, data = publisher.recv_multipart()
             request = Request()
             request.ParseFromString(data)
-            now = time.time()
-            ss.sched_request(now, request, address, on_complete)
+            # assert request.timestamp < time.time(), "Reqeust from future: {} >= {}".format(request.timestamp, time.time())
+            ss.sched_request(request.timestamp, request, address, on_complete)
         env.run(until=(time.time() + RUN_AHEAD))

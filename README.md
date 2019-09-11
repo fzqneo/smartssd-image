@@ -11,16 +11,18 @@ Cloning: `git clone --recursive git@github.com:fzqneo/smartssd-image.git`
 ## Todo
 
 Emulated Storage:
-- [ ] Emulated smart storage client side (Edmond)
-- [ ] Client/Server communication between application and emulated storage over 0MQ+ipc:// (Haithem)
+- [ ] Store pre-computed face boxes in DB for emulation
+- [x] Emulated smart storage client side (Edmond)
+- [x] Client/Server communication between application and emulated storage over 0MQ+ipc:// (Haithem)
 - [x] Basic simulator framework using SimPy (Edmond)
 - [x] Create communication stub using ZeroMQ and Protobuf (Haithem)
 - [x] Implement emulated JPEG ASIC that scales decode time based on software decode time
 
 Applications:
+- [ ] Create MobileNet filter (that connects to a web service) (Edmond)
 - [ ] Find a few more filters from related papers
-- [ ] Add face detection filter
-- [ ] RGB hist 2D filter, background subtraction filter, perceptual hashing filter (Shilpa)
+- [ ] Add face detection filter (Shilpa)
+- [x] RGB hist 2D filter, background subtraction filter, perceptual hashing filter (Shilpa)
 - [x] Simple file reader, OpenCV decoder, and RGB hist 1D as filters (Edmond)
 - [x] Simple Eureka-ish filtering framework (Edmond)
 - [x] RGB color histogram (Edmond)
@@ -50,7 +52,7 @@ FUSE:
 - [x] Modify FUSE: (1) Read .jpg from HDD; (2) Read .ppm from ram disk; (3) return PPM data
 
 Data:
-- [ ] Find or create a PNG data set
+- [x] Transcode Flickr2500 JPEG to PNG
 - [x] Convert and save image in PPM format
 
 Literature survey:
