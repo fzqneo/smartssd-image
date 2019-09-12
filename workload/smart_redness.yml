@@ -1,10 +1,8 @@
-expname: simple_redness
+expname: smart_redness
 
 filters:
   -
-    filter: SimpleReadFilter
-  -
-    filter: DecodeFilter
+    filter: SmartDecodeFilter
   -
     filter: RGBHist3dFilter
     kwargs:

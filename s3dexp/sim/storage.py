@@ -1,3 +1,4 @@
+import fire
 from google.protobuf.json_format import MessageToJson
 import logging
 import logzero
@@ -60,8 +61,8 @@ class SmartStorageSim(object):
         else:
             NotImplemented
 
-        callback(env.now, address, request)
-        self.env.exit(env.now)
+        callback(self.env.now, address, request)
+        self.env.exit(self.env.now)
 
     
     def sched_request(self, timestamp, *args, **kwargs):
@@ -72,13 +73,11 @@ class SmartStorageSim(object):
 
 
 
-if __name__ == "__main__":
-    base_dir = '/mnt/hdd/fast20/jpeg/flickr2500'
-    ext = 'jpg'
+def run_server(base_dir = '/mnt/hdd/fast20/jpeg/flickr2500', ext='*', decoder_mpixps=140., num_decoder=5, bus_mbyteps=2000):
 
     env = simpy.Environment(initial_time=time.time())
-    decoder = DecoderSim(env, target_mpixps=140, base_dir=base_dir, capacity=5)  
-    bus = BusSim(env, target_mbyteps=2000)
+    decoder = DecoderSim(env, target_mpixps=decoder_mpixps, base_dir=base_dir, capacity=num_decoder)  
+    bus = BusSim(env, target_mbyteps=bus_mbyteps)
     ss = SmartStorageSim(env, decoder, bus)
 
     def on_complete(t, address, request):
@@ -103,6 +102,8 @@ if __name__ == "__main__":
     poller = zmq.Poller()
     poller.register(publisher, zmq.POLLIN)
 
+    logger.info("======READY")
+
     while True:
         #  Wait for next request from client
         events = dict(poller.poll(0))
@@ -113,3 +114,6 @@ if __name__ == "__main__":
             # assert request.timestamp < time.time(), "Request from future: {} >= {}".format(request.timestamp, time.time())
             ss.sched_request(request.timestamp, request, address, on_complete)
         env.run(until=(time.time() + RUN_AHEAD))
+
+if __name__ == '__main__':
+    fire.Fire(run_server)

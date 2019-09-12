@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 from s3dexp.search import Filter
 
+# https://www.pyimagesearch.com/2014/01/22/clever-girl-a-guide-to-utilizing-color-histograms-for-computer-vision-and-image-search-engines/
+
 class RGBHist1dFilter(Filter):
     def __init__(self, color='r', higher_than=200, pixels_threshold=1000):
         super(RGBHist1dFilter, self).__init__(color, higher_than, pixels_threshold)
@@ -24,7 +26,7 @@ class RGBHist1dFilter(Filter):
         print hists[self.channel]
         return np.sum(hists[self.channel][self.higher_than]) > self.pixels_threshold
 
-# https://www.pyimagesearch.com/2014/01/22/clever-girl-a-guide-to-utilizing-color-histograms-for-computer-vision-and-image-search-engines/
+
 class RGBHist2dFilter(Filter):
     def __init__(self):
         super(RGBHist2dFilter, self).__init__()
@@ -55,7 +57,7 @@ class RGBHist3dFilter(Filter):
         self.color = color
  
         # simple definition of "redness" (ditto for blueness and greenness)
-        # r > color_threshold and b < other_lower_than and g < other_lower_than
+        # r > higher_than and b < other_lower_than and g < other_lower_than
         self.color_bin = int(higher_than / (256 / self.N_BINS))
         self.other_color_bin = int(other_lower_than / (256 / self.N_BINS))
         self.pixels_threshold = pixels_threshold
