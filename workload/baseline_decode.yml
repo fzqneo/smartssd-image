@@ -1,10 +1,8 @@
-expname: simple_rgbhist2d
+expname: baseline_decode
 
 filters:
   -
     filter: SimpleReadFilter
   -
     filter: DecodeFilter
-  -
-    filter: RGBHist2dFilter
     

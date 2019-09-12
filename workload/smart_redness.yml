@@ -4,8 +4,6 @@ filters:
   -
     filter: SmartDecodeFilter
   -
-    filter: RGBHist3dFilter
+    filter: ColorFilter
     kwargs:
-      color: r
-      higher_than: 200
-      pixels_threshold: 100000
+      pixels_threshold: 10000

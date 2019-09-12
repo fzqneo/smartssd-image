@@ -1,4 +1,4 @@
-expname: simple_detection
+expname: baseline_detection
 
 filters:
   -

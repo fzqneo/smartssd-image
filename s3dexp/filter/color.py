@@ -8,9 +8,6 @@ class ColorFilter(Filter):
         """Simple colorness filter based on pixel thresholds. 
         Default parameter is a "redness" filters.
         
-        Arguments:
-            Filter {[type]} -- [description]
-        
         Keyword Arguments:
             bgr_lb {list} -- [description] (default: {[0, 0, 200]})
             bgr_ub {list} -- [description] (default: {[128, 128, 255]})

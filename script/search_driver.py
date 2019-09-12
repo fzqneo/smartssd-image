@@ -3,6 +3,7 @@ import logging
 import logzero
 from logzero import logger
 import multiprocessing as mp
+import psutil
 import random
 import time
 import yaml
@@ -24,21 +25,32 @@ from s3dexp.utils import recursive_glob, get_fie_physical_start
 
 logzero.loglevel(logging.INFO)
 
-def run(search_file, base_dir, ext='jpg', num_workers=8, expname_append='', store_result=False, expname=None, sort_fie=False):
+CPU_START = (18, 54)    # pin on NUMA node 1
+
+def run(search_file, base_dir, ext='jpg', num_workers=4, expname_append='', store_result=False, expname=None, sort_fie=False):
     with open(search_file, 'r') as f:
         search_conf = yaml.load(f, Loader=yaml.FullLoader)
 
+    # prepare CPU affinity
+    assert num_workers % 2 == 0, "Must give an even number for num_workers: {}".format(num_workers)
+    cpuset = range(CPU_START[0], CPU_START[0] + num_workers /2) + range(CPU_START[1], CPU_START[1] + num_workers / 2)
+    logger.info("cpuset: {}".format(cpuset))
+    psutil.Process().cpu_affinity(cpuset)
+
+    # prepare expname
     if not expname:
         expname = search_conf['expname']
     expname = expname + expname_append
     logger.info("Using expname: {}".format(expname))
 
+    # prepare filter configs
     filter_configs = []
     for el in search_conf['filters']:
         filter_cls = globals()[el['filter']]
         fc = FilterConfig(filter_cls, args=el.get('args', []), kwargs=el.get('kwargs', {}))
         filter_configs.append(fc)
 
+    # prepare paths
     paths = list(recursive_glob(base_dir, '*.{}'.format(ext)))
     if sort_fie:
         paths = sorted(paths, key=get_fie_physical_start)
@@ -47,6 +59,7 @@ def run(search_file, base_dir, ext='jpg', num_workers=8, expname_append='', stor
         random.seed(42)
         random.shuffle(paths)
 
+    # create shared data structure by workers
     manager = mp.Manager()
     context = Context(manager)
 

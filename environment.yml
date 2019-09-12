@@ -7,6 +7,7 @@ dependencies:
   - _libgcc_mutex=0.1=main
   - _tflow_select=2.1.0=gpu
   - absl-py=0.7.1=py27_0
+  - asn1crypto=0.24.0=py27_0
   - astor=0.8.0=py27_0
   - astroid=1.6.5=py27_0
   - attrs=19.1.0=py27_1
@@ -20,7 +21,10 @@ dependencies:
   - c-ares=1.15.0=h7b6447c_1001
   - ca-certificates=2019.5.15=1
   - certifi=2019.6.16=py27_1
+  - cffi=1.12.3=py27h2e261b9_0
+  - chardet=3.0.4=py27_1003
   - configparser=3.7.4=py27_0
+  - cryptography=2.7=py27h1ba5d50_0
   - cudatoolkit=9.2=0
   - cudnn=7.6.0=cuda9.2_0
   - cupti=9.2.148=0
@@ -46,6 +50,7 @@ dependencies:
   - h5py=2.9.0=py27h7918eee_0
   - hdf5=1.10.4=hb1b8bf9_0
   - icu=58.2=h9c2bf20_1
+  - idna=2.8=py27_0
   - ipaddress=1.0.22=py27_0
   - ipykernel=4.10.0=py27_0
   - ipython=5.8.0=py27_0
@@ -93,7 +98,7 @@ dependencies:
   - notebook=5.7.8=py27_0
   - numpy=1.16.4=py27h99e49ec_0
   - numpy-base=1.16.4=py27h2f8d375_0
-  - openssl=1.1.1c=h7b6447c_1
+  - openssl=1.1.1d=h7b6447c_0
   - pandas=0.24.2=py27he6710b0_0
   - pandoc=2.2.3.2=0
   - pandocfilters=1.4.2=py27_1
@@ -106,12 +111,15 @@ dependencies:
   - prompt_toolkit=1.0.15=py27_0
   - protobuf=3.8.0=py27he6710b0_0
   - ptyprocess=0.6.0=py27_0
+  - pycparser=2.19=py27_0
   - pycurl=7.43.0.3=py27h1ba5d50_0
   - pygments=2.4.2=py_0
   - pylint=1.9.2=py27_0
+  - pyopenssl=19.0.0=py27_0
   - pyparsing=2.4.2=py_0
   - pyqt=5.9.2=py27h05f1152_2
   - pyrsistent=0.14.11=py27h7b6447c_0
+  - pysocks=1.7.0=py27_0
   - python=2.7.16=h9bab390_0
   - python-dateutil=2.8.0=py27_0
   - pytz=2019.2=py_0
@@ -120,6 +128,7 @@ dependencies:
   - qt=5.9.7=h5867ecd_1
   - qtconsole=4.5.4=py_0
   - readline=7.0=h7b6447c_5
+  - requests=2.22.0=py27_0
   - scandir=1.10.0=py27h7b6447c_0
   - scikit-learn=0.20.3=py27h22eb022_0
   - scipy=1.2.1=py27he2b7bc3_0
@@ -144,6 +153,7 @@ dependencies:
   - traitlets=4.3.2=py27_0
   - typing=3.7.4=py27_0
   - unittest2=1.1.0=py27_0
+  - urllib3=1.24.2=py27_0
   - wcwidth=0.1.7=py27_0
   - webencodings=0.5.1=py27_1
   - werkzeug=0.15.5=py_0
@@ -157,10 +167,12 @@ dependencies:
   - pip:
     - alembic==1.0.11
     - contextlib2==0.5.5
+    - directio==1.2
     - lxml==4.3.4
     - mako==1.0.13
     - opencv-contrib-python-headless==4.1.0.25
     - pillow==6.1.0
+    - psutil==5.6.3
     - pymysql==0.9.3
     - python-editor==1.0.4
     - raven==6.10.0
