@@ -63,3 +63,20 @@ class EurekaExp(Base):
     avg_mbyteps = sa.Column(sa.Float(53))
     peak_mbyteps = sa.Column(sa.Float(53))
     hostname = sa.Column(sa.String(1024), nullable=False)
+
+class FaceExp(Base):
+    __tablename__ = 'FaceExp'
+    id = sa.Column(sa.Integer, primary_key=True)
+    expname = sa.Column(sa.String(1024), nullable=False)
+    path = sa.Column(sa.String(1024), nullable=False)
+    basename = sa.Column(sa.String(1024), nullable=False)
+    device = sa.Column(sa.String(32), nullable=False)
+    disk = sa.Column(sa.String(32))
+    read_ms = sa.Column(sa.Float(53))
+    decode_ms = sa.Column(sa.Float(53))
+    total_ms = sa.Column(sa.Float(53))
+    size = sa.Column(sa.Integer)
+    width = sa.Column(sa.Integer)
+    height = sa.Column(sa.Integer)
+    num_faces = sa.Column(sa.Integer)
+    box = sa.Column(sa.String(1024))
