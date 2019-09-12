@@ -25,5 +25,5 @@ class FaceDetectorFilter(Filter):
             confidence = detections[0, 0, i, 2]
             if confidence > threshold:
                 box.append((detections[0, 0, i, 3:7] * np.array([w, h, w, h])).astype('int'))
-        item['feace_detcetion'] = box
+        item['face_detection'] = box
         return True
