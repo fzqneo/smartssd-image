@@ -11,6 +11,7 @@ from s3dexp import this_hostname
 import s3dexp.db.utils as dbutils
 import s3dexp.db.models as dbmodles
 from s3dexp.filter.bgd_subtract import BackgroundSubtractionFilter
+from s3dexp.filter.color import ColorFilter
 from s3dexp.filter.decoder import DecodeFilter
 from s3dexp.filter.facedetector import FaceDetectorFilter
 from s3dexp.filter.image_hash import ImageHashFilter

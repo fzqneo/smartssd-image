@@ -117,7 +117,7 @@ def search_work(filter_configs, context):
                     count += 1
                     count_passed += int(passed)
                     if passed:
-                        logger.debug("Accepted {}".format(src))
+                        logger.info("Accepted {}".format(src))
                 else:
                     logger.info("[Worker {}] terminating on receiving None ".format(os.getpid()))
                     break
