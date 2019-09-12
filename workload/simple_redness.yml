@@ -1,0 +1,13 @@
+expname: simple_redness
+
+filters:
+  -
+    filter: SimpleReadFilter
+  -
+    filter: DecodeFilter
+  -
+    filter: RGBHist3dFilter
+    kwargs:
+      color: b
+      higher_than: 200
+      pixels_threshold: 100000

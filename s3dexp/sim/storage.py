@@ -77,7 +77,7 @@ if __name__ == "__main__":
     ext = 'jpg'
 
     env = simpy.Environment(initial_time=time.time())
-    decoder = DecoderSim(env, target_mpixps=140, base_dir=base_dir, capacity=4)  
+    decoder = DecoderSim(env, target_mpixps=140, base_dir=base_dir, capacity=5)  
     bus = BusSim(env, target_mbyteps=2000)
     ss = SmartStorageSim(env, decoder, bus)
 

@@ -100,11 +100,19 @@ python script/search_driver.py workload/simple_read_decode.yml /mnt/hdd/fast20/j
 
 See workload/*.yml about how to define a workload.
 
+## Change DB Schema (Adding tables, columns, etc.)
+
+1. Update [s3dexp/db/models.py](s3dexp/db/models.py)
+2. `make install`
+3. `alembic revision --autogenerate -m "Some message here"`
+4. Check the auto-generated file alembic/versions/xxxxxx_xxxxxxxxx.py
+5. `alebmic upgrade head` -- this will actually update the DB schema
+
+
 ## Running TensorFlow batch inference
 ```bash
 python script/profile_mobilenet_batch.py /mnt/hdd/fast20/jpeg/flickr2500  --batch_size=64 
 ```
-
 
 ## Create a ramfs to hold PPM files
 
