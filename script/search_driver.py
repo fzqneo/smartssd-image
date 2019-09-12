@@ -12,6 +12,7 @@ import s3dexp.db.utils as dbutils
 import s3dexp.db.models as dbmodles
 from s3dexp.filter.bgd_subtract import BackgroundSubtractionFilter
 from s3dexp.filter.decoder import DecodeFilter
+from s3dexp.filter.facedetector import FaceDetectorFilter
 from s3dexp.filter.image_hash import ImageHashFilter
 from s3dexp.filter.object_detection import ObjectDetectionFilter
 from s3dexp.filter.reader import SimpleReadFilter

@@ -1,0 +1,10 @@
+expname: face_detection
+
+filters:
+  -
+    filter: SimpleReadFilter
+  -
+    filter: DecodeFilter
+  -
+    filter: FaceDetectorFilter
+    
