@@ -21,7 +21,7 @@ Emulated Storage:
 Applications:
 - [ ] Create MobileNet filter (that connects to a web service) (Edmond)
 - [ ] Find a few more filters from related papers
-- [ ] Add face detection filter (Shilpa)
+- [x] Add face detection filter (Shilpa)
 - [x] RGB hist 2D filter, background subtraction filter, perceptual hashing filter (Shilpa)
 - [x] Simple file reader, OpenCV decoder, and RGB hist 1D as filters (Edmond)
 - [x] Simple Eureka-ish filtering framework (Edmond)
@@ -106,7 +106,7 @@ See workload/*.yml about how to define a workload.
 2. `make install`
 3. `alembic revision --autogenerate -m "Some message here"`
 4. Check the auto-generated file alembic/versions/xxxxxx_xxxxxxxxx.py
-5. `alebmic upgrade head` -- this will actually update the DB schema
+5. `alembic upgrade head` -- this will actually update the DB schema
 
 
 ## Running TensorFlow batch inference
