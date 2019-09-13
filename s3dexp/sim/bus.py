@@ -8,6 +8,8 @@ class BusSim(object):
         self.env = env
         self._semaphore = simpy.Resource(env)
 
+        logger.info("Initialized bus at {} MBytes/s".format(self.target_mbyteps))
+
     def send(self, size_in_bytes):
         # a simpy generator
         sim_elapsed = size_in_bytes * 1e-6 / self.target_mbyteps

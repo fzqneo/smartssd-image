@@ -4,7 +4,7 @@ from s3dexp.search import Filter
 
 
 class ColorFilter(Filter):
-    def __init__(self, bgr_lb=[0, 0, 150], bgr_ub=[50, 50, 255], pixels_threshold=10000):
+    def __init__(self, bgr_lb=[0, 0, 180], bgr_ub=[50, 50, 255], pixels_threshold=10000):
         """Simple colorness filter based on pixel thresholds. 
         Default parameter is a "redness" filters.
         

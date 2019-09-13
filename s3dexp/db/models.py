@@ -63,6 +63,7 @@ class EurekaExp(Base):
     avg_mbyteps = sa.Column(sa.Float(53))
     peak_mbyteps = sa.Column(sa.Float(53))
     hostname = sa.Column(sa.String(1024), nullable=False)
+    # passed_items = sa.Column(sa.Integer)
 
 class FaceExp(Base):
     __tablename__ = 'FaceExp'

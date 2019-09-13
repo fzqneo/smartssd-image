@@ -6,4 +6,5 @@ filters:
   -
     filter: ColorFilter
     kwargs:
+      bgr_lb: [0, 0, 200]
       pixels_threshold: 10000

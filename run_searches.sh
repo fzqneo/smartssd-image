@@ -3,14 +3,14 @@ set -e
 
 SORT=${SORT:-0}
 WORKERS=${WORKERS:-4}
-BASEDIR=/mnt/hdd/fast20/jpeg/flickr2500
+BASEDIR=/mnt/hdd/fast20/jpeg/flickr50k
 EXP_APPEND=${EXP_APPEND:-""}
 
 [ 1 -eq $SORT ] && echo "Sorting!"
 
 declare -a WORKLOADS
-# WORKLOADS=(workload/baseline_read.yml workload/baseline_decode.yml  workload/baseline_redness.yml)
-WORKLOADS=(workload/smart_decode.yml  workload/smart_redness.yml)
+# WORKLOADS=(workload/baseline_read.yml workload/baseline_decode.yml  workload/baseline_redness.yml workload/baseline_redbus.yml)
+WORKLOADS=(workload/smart_decode.yml  workload/smart_redness.yml workload/smart_redbus.yml)
 
 for w in ${WORKLOADS[@]}; do
     echo $w

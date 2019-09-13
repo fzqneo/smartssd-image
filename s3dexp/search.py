@@ -128,7 +128,8 @@ def search_work(filter_configs, context):
                 context.q.task_done()
     finally:
         elapsed_cpu = time.clock() - tic_cpu
-        logger.info("[Worker {}] writing stats: {}".format(os.getpid(), str((count, elapsed_cpu))))
+        logger.info("[Worker {}] num_items {}, passed_items {}, elapsed_cpu: {}, session_stats: {}".format(
+            os.getpid(), count, count_passed, elapsed_cpu, str(session_stats)))
         with context.lock:
             context.stats['num_workers'] += 1
             context.stats['num_items'] += count

@@ -32,8 +32,11 @@ def run(search_file, base_dir, ext='jpg', num_workers=4, expname_append='', stor
         search_conf = yaml.load(f, Loader=yaml.FullLoader)
 
     # prepare CPU affinity
-    assert num_workers % 2 == 0, "Must give an even number for num_workers: {}".format(num_workers)
-    cpuset = range(CPU_START[0], CPU_START[0] + num_workers /2) + range(CPU_START[1], CPU_START[1] + num_workers / 2)
+    assert num_workers ==1 or num_workers % 2 == 0, "Must give an even number for num_workers or 1: {}".format(num_workers)
+    if num_workers > 1:
+        cpuset = range(CPU_START[0], CPU_START[0] + num_workers /2) + range(CPU_START[1], CPU_START[1] + num_workers / 2)
+    else:
+        cpuset = [CPU_START[0], ]
     logger.info("cpuset: {}".format(cpuset))
     psutil.Process().cpu_affinity(cpuset)
 
@@ -67,6 +70,7 @@ def run(search_file, base_dir, ext='jpg', num_workers=4, expname_append='', stor
     run_search(filter_configs, num_workers, paths, context)
     elapsed = time.time() - tic
 
+    logger.info("End-to-end elapsed time {:.3f} s".format(elapsed))
     logger.info(str(context.stats))
 
     keys_dict={'expname': expname, 'basedir': base_dir, 'ext': ext, 'num_workers': num_workers, 'hostname': this_hostname}

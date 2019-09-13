@@ -107,6 +107,7 @@ See workload/*.yml about how to define a workload.
 3. `alembic revision --autogenerate -m "Some message here"`
 4. Check the auto-generated file alembic/versions/xxxxxx_xxxxxxxxx.py
 5. `alembic upgrade head` -- this will actually update the DB schema
+6. Add the alembic/versions/xxx.py file to repo
 
 
 ## Running TensorFlow batch inference
