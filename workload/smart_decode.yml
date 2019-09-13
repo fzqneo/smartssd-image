@@ -1,0 +1,5 @@
+expname: smart_decode
+
+filters:
+  -
+    filter: SmartDecodeFilter

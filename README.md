@@ -11,15 +11,18 @@ Cloning: `git clone --recursive git@github.com:fzqneo/smartssd-image.git`
 ## Todo
 
 Emulated Storage:
-- [ ] Emulated smart storage client side (Edmond)
-- [ ] Client/Server communication between application and emulated storage over 0MQ+ipc:// (Haithem)
+- [ ] Store pre-computed face boxes in DB for emulation
+- [x] Emulated smart storage client side (Edmond)
+- [x] Client/Server communication between application and emulated storage over 0MQ+ipc:// (Haithem)
 - [x] Basic simulator framework using SimPy (Edmond)
 - [x] Create communication stub using ZeroMQ and Protobuf (Haithem)
 - [x] Implement emulated JPEG ASIC that scales decode time based on software decode time
 
 Applications:
+- [ ] Create MobileNet filter (that connects to a web service) (Edmond)
 - [ ] Find a few more filters from related papers
-- [ ] RGB hist 2D filter, background subtraction filter, perceptual hashing filter (Shilpa)
+- [x] Add face detection filter (Shilpa)
+- [x] RGB hist 2D filter, background subtraction filter, perceptual hashing filter (Shilpa)
 - [x] Simple file reader, OpenCV decoder, and RGB hist 1D as filters (Edmond)
 - [x] Simple Eureka-ish filtering framework (Edmond)
 - [x] RGB color histogram (Edmond)
@@ -49,10 +52,12 @@ FUSE:
 - [x] Modify FUSE: (1) Read .jpg from HDD; (2) Read .ppm from ram disk; (3) return PPM data
 
 Data:
-- [ ] Find or create a PNG data set
+- [x] Transcode Flickr2500 JPEG to PNG
 - [x] Convert and save image in PPM format
 
 Literature survey:
+- [ ] Reference numbers of ASIC for face detection
+- [ ] Reference numbers of ASIC for PNG decoding
 - [ ] FAST papers 2005 - 2019. Keyword: smart disk, active disk, disk simulation/emulation (Edmond)
 - [x] Reference numbers of ASIC for JPEG decoding (Shilpa)
 
@@ -79,7 +84,7 @@ Literature survey:
         - /home/zf/miniconda2/envs
     ```
     3. Activate: `conda activate s3dexp`
-    4. Install changes of Python code to conda env: `make install`
+    4. Install changes of Python code to conda env: `make install` (if you've changed group, you don't need sudo).
 * Jupyter notebook server: http://cloudlet015.elijah.cs.cmu.edu:8888 (ask me for password)
 
 
@@ -95,11 +100,20 @@ python script/search_driver.py workload/simple_read_decode.yml /mnt/hdd/fast20/j
 
 See workload/*.yml about how to define a workload.
 
+## Change DB Schema (Adding tables, columns, etc.)
+
+1. Update [s3dexp/db/models.py](s3dexp/db/models.py)
+2. `make install`
+3. `alembic revision --autogenerate -m "Some message here"`
+4. Check the auto-generated file alembic/versions/xxxxxx_xxxxxxxxx.py
+5. `alembic upgrade head` -- this will actually update the DB schema
+6. Add the alembic/versions/xxx.py file to repo
+
+
 ## Running TensorFlow batch inference
 ```bash
 python script/profile_mobilenet_batch.py /mnt/hdd/fast20/jpeg/flickr2500  --batch_size=64 
 ```
-
 
 ## Create a ramfs to hold PPM files
 

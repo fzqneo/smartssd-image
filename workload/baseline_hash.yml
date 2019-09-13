@@ -1,4 +1,4 @@
-expname: simple_bgdsubtract
+expname: baseline_hash
 
 filters:
   -
@@ -6,5 +6,5 @@ filters:
   -
     filter: DecodeFilter
   -
-    filter: BackgroundSubtractionFilter
+    filter: ImageHashFilter
     

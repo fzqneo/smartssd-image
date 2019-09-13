@@ -1,0 +1,12 @@
+expname: baseline_detection
+
+filters:
+  -
+    filter: SimpleReadFilter
+  -
+    filter: DecodeFilter
+  -
+    filter: ObjectDetectionFilter
+    kwargs:
+      targets: ["bus"]
+    

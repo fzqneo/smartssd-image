@@ -1,0 +1,10 @@
+expname: smart_redness
+
+filters:
+  -
+    filter: SmartDecodeFilter
+  -
+    filter: ColorFilter
+    kwargs:
+      bgr_lb: [0, 0, 200]
+      pixels_threshold: 10000

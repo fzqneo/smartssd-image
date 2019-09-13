@@ -1,0 +1,16 @@
+expname: baseline_redbus
+
+filters:
+  -
+    filter: SimpleReadFilter
+  -
+    filter: DecodeFilter
+  -
+    filter: ColorFilter
+    kwargs:
+      bgr_lb: [0, 0, 200]
+      pixels_threshold: 10000
+  -
+    filter: ObjectDetectionFilter
+    kwargs:
+      targets: ["bus"]

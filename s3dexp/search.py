@@ -1,3 +1,4 @@
+import collections
 from logzero import logger
 import multiprocessing as mp
 import numpy as np
@@ -45,13 +46,18 @@ class Item(object):
 class Filter(object):
     def __init__(self, *args, **kwargs):
         super(Filter, self).__init__()
-        self._str = "{}({}, {})".format(type(self).__name__, ','.join(args), str(kwargs))
+        self._str = "{}({}, {})".format(type(self).__name__, ','.join(map(str,args)), str(kwargs))
     
     def __call__(self, item):
         raise NotImplementedError
 
     def __str__(self):
         return self._str
+
+    def set_session_stats(self, dct):
+        # Pass in an external dict for logging session-wide statistics,
+        # e.g., bytes read from (emulated) disk
+        self.session_stats = dct
 
 
 class FilterConfig(object):
@@ -61,7 +67,6 @@ class FilterConfig(object):
         self.filter_cls = filter_cls
         self.args = args
         self.kwargs = kwargs
-
 
     def instantiate(self):
         return self.filter_cls(*self.args, **self.kwargs)
@@ -77,6 +82,8 @@ class Context(object):
             num_items=0,
             num_workers=0,
             cpu_time=0.,
+            passed_items=0,
+            bytes_from_disk=0,
         )
 
 
@@ -88,6 +95,11 @@ def search_work(filter_configs, context):
 
     tic_cpu = time.clock()
     count = 0
+    count_passed = 0
+
+    session_stats = collections.defaultdict(float)
+    for f in filters:
+        f.set_session_stats(session_stats)
 
     try:
         while True:
@@ -95,10 +107,17 @@ def search_work(filter_configs, context):
             try:
                 if src is not None:
                     item = Item(src)
+                    passed = True
                     for f in filters:
-                        f(item)
+                        ret = f(item)
+                        passed = passed and ret
+                        if not passed:
+                            break
                     del item
                     count += 1
+                    count_passed += int(passed)
+                    if passed:
+                        logger.debug("Accepted {}".format(src))
                 else:
                     logger.info("[Worker {}] terminating on receiving None ".format(os.getpid()))
                     break
@@ -109,11 +128,14 @@ def search_work(filter_configs, context):
                 context.q.task_done()
     finally:
         elapsed_cpu = time.clock() - tic_cpu
-        logger.info("[Worker {}] writing stats: {}".format(os.getpid(), str((count, elapsed_cpu))))
+        logger.info("[Worker {}] num_items {}, passed_items {}, elapsed_cpu: {}, session_stats: {}".format(
+            os.getpid(), count, count_passed, elapsed_cpu, str(session_stats)))
         with context.lock:
             context.stats['num_workers'] += 1
             context.stats['num_items'] += count
             context.stats['cpu_time'] += elapsed_cpu
+            context.stats['passed_items'] += count_passed
+            context.stats['bytes_from_disk'] += session_stats['bytes_from_disk']
 
     
 def run_search(filter_configs, num_workers, path_list_or_gen, context):

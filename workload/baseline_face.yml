@@ -1,4 +1,4 @@
-expname: simple_rgbhist1d
+expname: baseline_face
 
 filters:
   -
@@ -6,5 +6,5 @@ filters:
   -
     filter: DecodeFilter
   -
-    filter: ImageHashFilter
+    filter: FaceDetectorFilter
     

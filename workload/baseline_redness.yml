@@ -1,0 +1,12 @@
+expname: baseline_redness
+
+filters:
+  -
+    filter: SimpleReadFilter
+  -
+    filter: DecodeFilter
+  -
+    filter: ColorFilter
+    kwargs:
+      bgr_lb: [0, 0, 200]
+      pixels_threshold: 10000

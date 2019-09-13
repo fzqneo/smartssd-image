@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+message Request {
+    double timestamp = 1;
+    int32 opcode = 2;
+    string path = 3;
+    int32 wait = 4;
+}
+
+message Response {
+    double request_timestamp = 1;
+    double completion_timestamp = 2;
+    string value = 3;
+}

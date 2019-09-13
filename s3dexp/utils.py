@@ -1,4 +1,3 @@
-import directio
 import fnmatch
 import os
 
@@ -18,11 +17,3 @@ def get_fie_physical_start(path):
         del mappings_gen
     return physical_start
 
-
-
-
-# def directio_read(path):
-#     fd = os.open(path, os.O_RDONLY | os.O_DIRECT)
-#     content = directio.read(fd, 1024*1024)  # FIXME
-#     os.close(fd)
-#     return content

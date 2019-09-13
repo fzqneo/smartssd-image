@@ -3,6 +3,7 @@ import os
 import simpy
 import time
 
+from s3dexp import this_hostname
 import s3dexp.db.utils as dbutils
 import s3dexp.db.models as models
 
@@ -18,6 +19,7 @@ class DecoderSim(object):
 
         sess = dbutils.get_session()
         profiles = sess.query(models.DecodeProfile) \
+            .filter(models.DecodeProfile.hostname=='cloudlet029') \
             .filter(models.DecodeProfile.path.like('{}%'.format(base_dir))) \
             .filter(models.DecodeProfile.basename.like('%.{}'.format(ext))) \
             .all()

@@ -1,13 +1,25 @@
 #!/bin/bash
 set -e
 
+SORT=${SORT:-0}
+WORKERS=${WORKERS:-4}
+BASEDIR=/mnt/hdd/fast20/jpeg/flickr50k
+EXP_APPEND=${EXP_APPEND:-""}
+
+[ 1 -eq $SORT ] && echo "Sorting!"
+
 declare -a WORKLOADS
-WORKLOADS=(workload/simple_read.yml workload/simple_read_decode.yml workload/simple_rgbhist1d.yml)
+# WORKLOADS=(workload/baseline_read.yml workload/baseline_decode.yml  workload/baseline_redness.yml workload/baseline_redbus.yml)
+WORKLOADS=(workload/smart_decode.yml  workload/smart_redness.yml workload/smart_redbus.yml)
 
 for w in ${WORKLOADS[@]}; do
     echo $w
     make drop-cache
     sleep 1
-    cgexec -g cpuset,memory:/s3dexphost python script/search_driver.py $w  /mnt/hdd/fast20/jpeg/flickr2500 --num_workers=4 --store_result=True --sort_fie=True  --expname_append=-sorted
-    sleep 2
+    if [ 1 -eq $SORT ]; then
+        python script/search_driver.py $w $BASEDIR --num_workers=$WORKERS --store_result=True --sort_fie=True  --expname_append="-sorted$EXP_APPEND";
+    else
+        python script/search_driver.py $w $BASEDIR --num_workers=$WORKERS --store_result=True --expname_append="$EXP_APPEND";
+    fi;
+    sleep 1
 done;
