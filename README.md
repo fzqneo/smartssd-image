@@ -12,8 +12,8 @@ Cloning: `git clone --recursive git@github.com:fzqneo/smartssd-image.git`
 
 Emulated Storage:
 - [ ] Add APIs regarding batch iterators (Edmond)
-- [ ] Add emulated face detector ASIC (Edmond)
-- [ ] Store pre-computed face boxes in DB for emulation (Shilpa)
+- [x] Add emulated face detector ASIC (Edmond)
+- [x] Store pre-computed face boxes in DB for emulation (Shilpa)
 - [x] Emulated smart storage client side (Edmond)
 - [x] Client/Server communication between application and emulated storage over 0MQ+ipc:// (Haithem)
 - [x] Basic simulator framework using SimPy (Edmond)
@@ -58,6 +58,7 @@ Data:
 - [x] Convert and save image in PPM format
 
 Literature survey:
+- [ ] Reference numbers of video decoding hardware
 - [ ] Reference numbers of ASIC for face detection
 - [ ] Reference numbers of ASIC for PNG decoding
 - [ ] FAST papers 2005 - 2019. Keyword: smart disk, active disk, disk simulation/emulation (Edmond)

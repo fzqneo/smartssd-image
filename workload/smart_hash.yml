@@ -1,0 +1,8 @@
+expname: baseline_hash
+
+filters:
+  -
+    filter: SmartDecodeFilter
+  -
+    filter: ImageHashFilter
+    

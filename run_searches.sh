@@ -9,8 +9,8 @@ EXP_APPEND=${EXP_APPEND:-""}
 [ 1 -eq $SORT ] && echo "Sorting!"
 
 declare -a WORKLOADS
-# WORKLOADS=(workload/baseline_read.yml workload/baseline_decode.yml  workload/baseline_redness.yml workload/baseline_redbus.yml)
-WORKLOADS=(workload/smart_decode.yml  workload/smart_redness.yml workload/smart_redbus.yml)
+# WORKLOADS=(workload/baseline_hash.yml)
+WORKLOADS=(workload/smart_hash.yml)
 
 for w in ${WORKLOADS[@]}; do
     echo $w
