@@ -11,7 +11,9 @@ Cloning: `git clone --recursive git@github.com:fzqneo/smartssd-image.git`
 ## Todo
 
 Emulated Storage:
-- [ ] Store pre-computed face boxes in DB for emulation
+- [ ] Add APIs regarding batch iterators (Edmond)
+- [ ] Add emulated face detector ASIC (Edmond)
+- [ ] Store pre-computed face boxes in DB for emulation (Shilpa)
 - [x] Emulated smart storage client side (Edmond)
 - [x] Client/Server communication between application and emulated storage over 0MQ+ipc:// (Haithem)
 - [x] Basic simulator framework using SimPy (Edmond)
@@ -19,8 +21,8 @@ Emulated Storage:
 - [x] Implement emulated JPEG ASIC that scales decode time based on software decode time
 
 Applications:
-- [ ] Create MobileNet filter (that connects to a web service) (Edmond)
 - [ ] Find a few more filters from related papers
+- [x] Create MobileNet filter (that connects to a web service) (Edmond)
 - [x] Add face detection filter (Shilpa)
 - [x] RGB hist 2D filter, background subtraction filter, perceptual hashing filter (Shilpa)
 - [x] Simple file reader, OpenCV decoder, and RGB hist 1D as filters (Edmond)
@@ -99,6 +101,14 @@ python script/search_driver.py workload/simple_read_decode.yml /mnt/hdd/fast20/j
 ```
 
 See workload/*.yml about how to define a workload.
+
+### Running workload with emulated smart storage
+```bash
+# in a separate terminal, run this first
+python s3dexp/sim/storage.py --base_dir=/mnt/hdd/fast20/jpeg/flickr2500
+# after "======READY" shows up, start the search_driver
+python script/search_driver.py ...
+```
 
 ## Change DB Schema (Adding tables, columns, etc.)
 

@@ -13,3 +13,19 @@ class SmartDecodeFilter(Filter):
         item.array = arr
         self.session_stats['bytes_from_disk'] += arr.size
         return True
+
+
+class SmartFaceFilter(Filter):
+    def __init__(self, map_from_dir='/mnt/hdd/fast20/jpeg', min_faces=1):
+        super(SmartFaceFilter, self).__init__(map_from_dir, min_faces)
+        self.ss_client = SmartStorageClient(map_from_dir=map_from_dir)
+        self.min_faces = 1
+
+    def __call__(self, item):
+        path = item.src
+        arr, boxes = self.ss_client.read_decode_face(path)
+        item['face_detection'] = boxes
+
+        self.session_stats['bytes_from_disk'] += sum(map(lambda b: abs(3*(b[0]-b[2])*(b[1]-b[3])), boxes))
+
+        return len(boxes) >= self.min_faces

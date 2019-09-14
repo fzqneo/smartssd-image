@@ -1,0 +1,5 @@
+expname: smart_face
+
+filters:
+  -
+    filter: SmartFaceFilter  

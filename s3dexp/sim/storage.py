@@ -1,5 +1,6 @@
 import fire
 from google.protobuf.json_format import MessageToJson
+import json
 import logging
 import logzero
 from logzero import logger
@@ -7,13 +8,15 @@ import simpy
 import time
 import zmq
 
-from s3dexp.sim.decoder import DecoderSim
-from s3dexp.sim.bus import BusSim
 from s3dexp.sim.communication_pb2 import Request, Response
+from s3dexp.sim.bus import BusSim
+from s3dexp.sim.decoder import DecoderSim
+from s3dexp.sim.face_detector import FaceDetectorSim
 
 OP_READONLY = 10
 OP_DECODEONLY = 20
 OP_READDECODE = 30
+OP_DECODE_FACE = 40
 OP_DEBUG_WAIT = 500
 
 # Simulator should run slightly ahead of real time.
@@ -26,7 +29,7 @@ logzero.loglevel(logging.INFO)
 
 # SimPy reference: https://simpy.readthedocs.io/en/latest/contents.html
 class SmartStorageSim(object):
-    def __init__(self, env, decoder, bus):
+    def __init__(self, env, decoder, bus, face_detector):
         super(SmartStorageSim, self).__init__()
         assert isinstance(decoder, DecoderSim)
         assert isinstance(bus, BusSim)
@@ -37,6 +40,7 @@ class SmartStorageSim(object):
         #  components
         self.decoder = decoder
         self.bus = bus
+        self.face_detector = face_detector
 
 
     def serve_request(self, request, address, callback):
@@ -48,20 +52,29 @@ class SmartStorageSim(object):
             timestamp {float} -- As returned by time.time()
             op {int} -- Op code
             request {Anything} -- Will be passed to callback when finished
-            callback {function} -- Will be called callback(env.now, request) when finished
+            callback {function} -- Will be called callback(env.now, request, value) when finished
         """
         op = request.opcode
+        retval = {'op': op}
+
         if op == OP_DECODEONLY:
             # logger.debug("Starting to decode {} at {}".format(request.path, self.env.now))
             w,h = yield self.env.process(self.decoder.decode(request.path))
             # logger.debug("Finished decode {} at {}".format(request.path, self.env.now))
             yield self.env.process(self.bus.send(w*h*3))
+        elif op == OP_DECODE_FACE:
+            w,h = yield self.env.process(self.decoder.decode(request.path))
+            boxes = yield self.env.process(self.face_detector.detect_face(request.path))
+            # assume we only transmitted the cropped patches
+            transmitted_size = sum(map(lambda b: abs(3*(b[0]-b[2])*(b[1]-b[3])), boxes))
+            yield self.env.process(self.bus.send(transmitted_size))
+            retval['face_boxes'] = boxes
         elif op == OP_DEBUG_WAIT:
             yield self.env.timeout(request.wait)
         else:
             NotImplemented
 
-        callback(self.env.now, address, request)
+        callback(self.env.now, address, request, retval)
         self.env.exit(self.env.now)
 
     
@@ -73,18 +86,19 @@ class SmartStorageSim(object):
 
 
 
-def run_server(base_dir = '/mnt/hdd/fast20/jpeg/flickr2500', ext='*', decoder_mpixps=140., num_decoder=5, bus_mbyteps=2000):
+def run_server(base_dir = '/mnt/hdd/fast20/jpeg/flickr2500', ext='jpg', decoder_mpixps=140., num_decoder=5, bus_mbyteps=2000, face_fps=30.):
 
     env = simpy.Environment(initial_time=time.time())
     decoder = DecoderSim(env, target_mpixps=decoder_mpixps, base_dir=base_dir, capacity=num_decoder)  
     bus = BusSim(env, target_mbyteps=bus_mbyteps)
-    ss = SmartStorageSim(env, decoder, bus)
+    face_detector = FaceDetectorSim(env, target_fps=face_fps, base_dir=base_dir)
+    ss = SmartStorageSim(env, decoder, bus, face_detector)
 
-    def on_complete(t, address, request):
+    def on_complete(t, address, request, value):
         response = Response()
         response.request_timestamp = request.timestamp
         response.completion_timestamp = t
-        response.value = str(request.opcode)
+        response.value = json.dumps(value)
 
         publisher.send_multipart([
             address,

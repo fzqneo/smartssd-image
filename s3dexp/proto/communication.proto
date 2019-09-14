@@ -5,6 +5,7 @@ message Request {
     int32 opcode = 2;
     string path = 3;
     int32 wait = 4;
+    string value = 5;
 }
 
 message Response {

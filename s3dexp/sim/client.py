@@ -1,12 +1,13 @@
 import cv2
 from google.protobuf.json_format import MessageToJson
+import json
 from logzero import logger
 import os
 import time
 import zmq
 
 from s3dexp.sim.communication_pb2 import Request, Response
-from s3dexp.sim.storage import OP_DECODEONLY, OP_DEBUG_WAIT
+from s3dexp.sim.storage import OP_DECODEONLY, OP_DEBUG_WAIT, OP_DECODE_FACE
 
 class SmartStorageClient(object):
     """A client talking to an emulated smart storage server. 
@@ -30,11 +31,7 @@ class SmartStorageClient(object):
 
     def read_decode(self, path):
         """Perform read for real, and emulate decode"""
-        size = os.path.getsize(path)
-        with open(path, 'r') as f:
-            fd = f.fileno()
-            _ = os.read(fd, size)
-
+        self._read_real(path)
         arr = self.decode_only(path)
         return arr
 
@@ -47,13 +44,32 @@ class SmartStorageClient(object):
         self._send_reqeust(request)
 
         # 2. Prepare the result
-        relpath = os.path.relpath(path, self.map_from_dir)
-        ppm_path = os.path.splitext(os.path.join(self.map_to_ppm_dir, relpath))[0] + '.ppm'
-        arr = cv2.imread(ppm_path, cv2.IMREAD_COLOR)
+        arr = self._load_decoded(path)
 
         # 3. Wait for response
         response = self._recv_response()
         return arr
+
+    def read_decode_face(self, path):
+        self._read_real(path)
+        return self.decode_face(path)
+
+    def decode_face(self, path):
+        # 1. Send the request
+        request = Request()
+        request.timestamp = time.time()
+        request.path = path
+        request.opcode = OP_DECODE_FACE
+        self._send_reqeust(request)
+
+        # 2. Read the ppm
+        arr = self._load_decoded(path)
+
+        # 3. Wait for response
+        response = self._recv_response()
+        boxes = json.loads(response.value)['face_boxes']
+        logger.debug("Face: {}, path {}".format(boxes, path))
+        return arr, boxes
 
     def debug_wait(self, wait):
         request = Request()
@@ -83,6 +99,19 @@ class SmartStorageClient(object):
             logger.debug("Too early by {:.3f} ms".format(late*1000))
         self.late_by = self.late_by * .5 + late * .5    # simple running average
         return response
+
+    def _load_decoded(self, path):
+        relpath = os.path.relpath(path, self.map_from_dir)
+        ppm_path = os.path.splitext(os.path.join(self.map_to_ppm_dir, relpath))[0] + '.ppm'
+        arr = cv2.imread(ppm_path, cv2.IMREAD_COLOR)
+        return arr
+
+    def _read_real(self, path):
+        """Read the file from disk for real so we can actual elapsed time"""
+        size = os.path.getsize(path)
+        with open(path, 'r') as f:
+            fd = f.fileno()
+            _ = os.read(fd, size)
 
     def __del__(self):
         logger.warn("Avg late by {:.3f} ms".format(self.late_by*1000))

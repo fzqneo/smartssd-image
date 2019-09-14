@@ -3,7 +3,7 @@ set -e
 
 SORT=${SORT:-0}
 WORKERS=${WORKERS:-4}
-BASEDIR=/mnt/hdd/fast20/jpeg/flickr50k
+BASEDIR=/mnt/hdd/fast20/jpeg/flickr2500
 EXP_APPEND=${EXP_APPEND:-""}
 
 [ 1 -eq $SORT ] && echo "Sorting!"

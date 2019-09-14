@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x13\x63ommunication.proto\"H\n\x07Request\x12\x11\n\ttimestamp\x18\x01 \x01(\x01\x12\x0e\n\x06opcode\x18\x02 \x01(\x05\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x0c\n\x04wait\x18\x04 \x01(\x05\"R\n\x08Response\x12\x19\n\x11request_timestamp\x18\x01 \x01(\x01\x12\x1c\n\x14\x63ompletion_timestamp\x18\x02 \x01(\x01\x12\r\n\x05value\x18\x03 \x01(\tb\x06proto3')
+  serialized_pb=_b('\n\x13\x63ommunication.proto\"W\n\x07Request\x12\x11\n\ttimestamp\x18\x01 \x01(\x01\x12\x0e\n\x06opcode\x18\x02 \x01(\x05\x12\x0c\n\x04path\x18\x03 \x01(\t\x12\x0c\n\x04wait\x18\x04 \x01(\x05\x12\r\n\x05value\x18\x05 \x01(\t\"R\n\x08Response\x12\x19\n\x11request_timestamp\x18\x01 \x01(\x01\x12\x1c\n\x14\x63ompletion_timestamp\x18\x02 \x01(\x01\x12\r\n\x05value\x18\x03 \x01(\tb\x06proto3')
 )
 
 
@@ -61,6 +61,13 @@ _REQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='value', full_name='Request.value', index=4,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -74,7 +81,7 @@ _REQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=23,
-  serialized_end=95,
+  serialized_end=110,
 )
 
 
@@ -118,8 +125,8 @@ _RESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=97,
-  serialized_end=179,
+  serialized_start=112,
+  serialized_end=194,
 )
 
 DESCRIPTOR.message_types_by_name['Request'] = _REQUEST

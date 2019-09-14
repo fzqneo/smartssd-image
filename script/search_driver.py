@@ -19,7 +19,7 @@ from s3dexp.filter.image_hash import ImageHashFilter
 from s3dexp.filter.object_detection import ObjectDetectionFilter
 from s3dexp.filter.reader import SimpleReadFilter
 from s3dexp.filter.rgbhist import RGBHist1dFilter, RGBHist2dFilter, RGBHist3dFilter
-from s3dexp.filter.smart_storage import SmartDecodeFilter
+from s3dexp.filter.smart_storage import SmartDecodeFilter, SmartFaceFilter
 from s3dexp.search import Context, FilterConfig, run_search
 from s3dexp.utils import recursive_glob, get_fie_physical_start
 
