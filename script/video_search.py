@@ -154,6 +154,8 @@ def run(video_path, diff_threshold=1000., delta_frames=30, detect=False, num_wor
     elapsed = time.time() - tic
     elapsed_cpu = time.clock() - tic_cpu
     
+    logger.info(str(context.stats))
+
     vals_dict={
         'num_items': context.stats['num_items'],
         'avg_wall_ms': 1e3 * elapsed / context.stats['num_items'],
