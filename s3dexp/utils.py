@@ -1,3 +1,4 @@
+import cv2
 import fnmatch
 import os
 
@@ -17,3 +18,8 @@ def get_fie_physical_start(path):
         del mappings_gen
     return physical_start
 
+def get_num_video_frames(path):
+    cap = cv2.VideoCapture(path)
+    frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    cap.release()
+    return int(frames)

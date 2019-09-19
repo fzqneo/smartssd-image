@@ -8,62 +8,6 @@ Cloning: `git clone --recursive git@github.com:fzqneo/smartssd-image.git`
 
 ![](fast20_arch.png)
 
-## Todo
-
-Emulated Storage:
-- [ ] Add APIs regarding batch iterators (Edmond)
-- [x] Add emulated face detector ASIC (Edmond)
-- [x] Store pre-computed face boxes in DB for emulation (Shilpa)
-- [x] Emulated smart storage client side (Edmond)
-- [x] Client/Server communication between application and emulated storage over 0MQ+ipc:// (Haithem)
-- [x] Basic simulator framework using SimPy (Edmond)
-- [x] Create communication stub using ZeroMQ and Protobuf (Haithem)
-- [x] Implement emulated JPEG ASIC that scales decode time based on software decode time
-
-Applications:
-- [ ] Find a few more filters from related papers
-- [x] Create MobileNet filter (that connects to a web service) (Edmond)
-- [x] Add face detection filter (Shilpa)
-- [x] RGB hist 2D filter, background subtraction filter, perceptual hashing filter (Shilpa)
-- [x] Simple file reader, OpenCV decoder, and RGB hist 1D as filters (Edmond)
-- [x] Simple Eureka-ish filtering framework (Edmond)
-- [x] RGB color histogram (Edmond)
-
-TensorFlow Application:
-- [ ] 10-layer ResNet. Refer to [BlazeIt](https://arxiv.org/abs/1805.01046) (Roger)
-- [x] MobileNet inference (Edmond)
-- [x] Create batching example using tf.data.Dataset (Edmond)
-- [x] Install MKL-enabled TensorFlow
-
-Infrastructure:
-- [x] Create cgroup for host and emulated disk
-- [x] Store all images' meta info (file name, original file size, image size) to MySQL.
-- [x] Add script to set up ram disk and populate it ppm data set
-- [x] Use alembic to create experiment DB tables
-- [x] Benchmark FS and RGB on PPM files
-- [x] Profile times to read image bytes from disk
-- [x] Profile software JPEG decode time
-
-DiskSim:
-- [ ] Create Protobuf for communication with syssim
-- [x] Compile and run syssim (Edmond)
-- [x] DiskSim 4.0 Manual (Edmond)
-
-FUSE:
-- [x] Use FUSE to map access to .jpg files to .ppm files
-- [x] Modify FUSE: (1) Read .jpg from HDD; (2) Read .ppm from ram disk; (3) return PPM data
-
-Data:
-- [x] Transcode Flickr2500 JPEG to PNG
-- [x] Convert and save image in PPM format
-
-Literature survey:
-- [ ] Reference numbers of video decoding hardware
-- [ ] Reference numbers of ASIC for face detection
-- [ ] Reference numbers of ASIC for PNG decoding
-- [ ] FAST papers 2005 - 2019. Keyword: smart disk, active disk, disk simulation/emulation (Edmond)
-- [x] Reference numbers of ASIC for JPEG decoding (Shilpa)
-
 
 ## Experiment Infrastructure
 
@@ -242,3 +186,61 @@ OpenCV (officitial `opencv`)  ~=  PIL ~= 210
 OpenCV (unofficial `opencv-contribe-python`) = 350 (uses libjpeg-turbo)
 
 `cv2.imread()` returns a numpy array of `.shape=(H, W, 3)`. `PIL.Image.open()` returns an `PIL.Image` object with attributes `.height`, `.width` and `.size`. Shell command `file` shows image size in `WxH` format.
+
+## Todo
+
+Emulated Storage:
+- [x] Add emulated video decoder (Edmond)
+- [x] Add emulated face detector ASIC (Edmond)
+- [x] Store pre-computed face boxes in DB for emulation (Shilpa)
+- [x] Emulated smart storage client side (Edmond)
+- [x] Client/Server communication between application and emulated storage over 0MQ+ipc:// (Haithem)
+- [x] Basic simulator framework using SimPy (Edmond)
+- [x] Create communication stub using ZeroMQ and Protobuf (Haithem)
+- [x] Implement emulated JPEG ASIC that scales decode time based on software decode time
+
+Applications:
+- [ ] Macro benchmarks
+- [ ] Find a few more filters from related papers
+- [x] Create MobileNet filter (that connects to a web service) (Edmond)
+- [x] Add face detection filter (Shilpa)
+- [x] RGB hist 2D filter, background subtraction filter, perceptual hashing filter (Shilpa)
+- [x] Simple file reader, OpenCV decoder, and RGB hist 1D as filters (Edmond)
+- [x] Simple Eureka-ish filtering framework (Edmond)
+- [x] RGB color histogram (Edmond)
+
+TensorFlow Application:
+- [ ] Use Active Disk in 10-layers ResNet (Edmond)
+- [x] 10-layer ResNet. Refer to [BlazeIt](https://arxiv.org/abs/1805.01046) (Roger)
+- [x] MobileNet inference (Edmond)
+- [x] Create batching example using tf.data.Dataset (Edmond)
+- [x] Install MKL-enabled TensorFlow
+
+Infrastructure:
+- [x] Create cgroup for host and emulated disk
+- [x] Store all images' meta info (file name, original file size, image size) to MySQL.
+- [x] Add script to set up ram disk and populate it ppm data set
+- [x] Use alembic to create experiment DB tables
+- [x] Benchmark FS and RGB on PPM files
+- [x] Profile times to read image bytes from disk
+- [x] Profile software JPEG decode time
+
+DiskSim:
+- [ ] Create Protobuf for communication with syssim
+- [x] Compile and run syssim (Edmond)
+- [x] DiskSim 4.0 Manual (Edmond)
+
+FUSE:
+- [x] Use FUSE to map access to .jpg files to .ppm files
+- [x] Modify FUSE: (1) Read .jpg from HDD; (2) Read .ppm from ram disk; (3) return PPM data
+
+Data:
+- [x] Transcode Flickr2500 JPEG to PNG
+- [x] Convert and save image in PPM format
+
+Literature survey:
+- [x] Reference numbers of video decoding hardware
+- [x] Reference numbers of ASIC for face detection
+- [ ] Reference numbers of ASIC for PNG decoding
+- [ ] FAST papers 2005 - 2019. Keyword: smart disk, active disk, disk simulation/emulation (Edmond)
+- [x] Reference numbers of ASIC for JPEG decoding (Shilpa)

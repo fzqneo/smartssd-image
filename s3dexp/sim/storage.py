@@ -10,13 +10,14 @@ import zmq
 
 from s3dexp.sim.communication_pb2 import Request, Response
 from s3dexp.sim.bus import BusSim
-from s3dexp.sim.decoder import DecoderSim
+from s3dexp.sim.decoder import DecoderSim, VideoDecoderSim
 from s3dexp.sim.face_detector import FaceDetectorSim
 
 OP_READONLY = 10
 OP_DECODEONLY = 20
 OP_READDECODE = 30
 OP_DECODE_FACE = 40
+OP_DECODE_VIDEO = 50
 OP_DEBUG_WAIT = 500
 
 # Simulator should run slightly ahead of real time.
@@ -29,7 +30,7 @@ logzero.loglevel(logging.INFO)
 
 # SimPy reference: https://simpy.readthedocs.io/en/latest/contents.html
 class SmartStorageSim(object):
-    def __init__(self, env, decoder, bus, face_detector):
+    def __init__(self, env, decoder, bus, face_detector, video_decoder):
         super(SmartStorageSim, self).__init__()
         assert isinstance(decoder, DecoderSim)
         assert isinstance(bus, BusSim)
@@ -41,7 +42,7 @@ class SmartStorageSim(object):
         self.decoder = decoder
         self.bus = bus
         self.face_detector = face_detector
-
+        self.video_decoder = video_decoder
 
     def serve_request(self, request, address, callback):
         """A generator that can be passed into env.process(). 
@@ -55,6 +56,7 @@ class SmartStorageSim(object):
             callback {function} -- Will be called callback(env.now, request, value) when finished
         """
         op = request.opcode
+        payload = json.loads(request.value)
         retval = {'op': op}
 
         if op == OP_DECODEONLY:
@@ -62,6 +64,7 @@ class SmartStorageSim(object):
             w,h = yield self.env.process(self.decoder.decode(request.path))
             # logger.debug("Finished decode {} at {}".format(request.path, self.env.now))
             yield self.env.process(self.bus.send(w*h*3))
+
         elif op == OP_DECODE_FACE:
             w,h = yield self.env.process(self.decoder.decode(request.path))
             boxes = yield self.env.process(self.face_detector.detect_face(request.path))
@@ -69,6 +72,12 @@ class SmartStorageSim(object):
             transmitted_size = sum(map(lambda b: abs(3*(b[0]-b[2])*(b[1]-b[3])), boxes))
             yield self.env.process(self.bus.send(transmitted_size))
             retval['face_boxes'] = boxes
+
+        elif op == OP_DECODE_VIDEO: # only use for one stream
+            frame_id = payload['frame_id']
+            w,h = yield self.env.process(self.video_decoder.decode_frame(request.path, frame_id)) 
+            yield self.env.process(self.bus.send(w*h*3))
+
         elif op == OP_DEBUG_WAIT:
             yield self.env.timeout(request.wait)
         else:
@@ -85,14 +94,16 @@ class SmartStorageSim(object):
         self.env.process(self.serve_request(*args, **kwargs))
 
 
+def run_server(base_dir = '/mnt/hdd/fast20/jpeg/flickr2500', ext='jpg', decoder_mpixps=140., num_decoder=5, bus_mbyteps=2000, face_fps=30., video_fps=120., run_ahead=RUN_AHEAD):
 
-def run_server(base_dir = '/mnt/hdd/fast20/jpeg/flickr2500', ext='jpg', decoder_mpixps=140., num_decoder=5, bus_mbyteps=2000, face_fps=30.):
+    logger.info("Run ahead = {:.2f} ms".format(1000*run_ahead))
 
     env = simpy.Environment(initial_time=time.time())
     decoder = DecoderSim(env, target_mpixps=decoder_mpixps, base_dir=base_dir, capacity=num_decoder)  
     bus = BusSim(env, target_mbyteps=bus_mbyteps)
     face_detector = FaceDetectorSim(env, target_fps=face_fps, base_dir=base_dir)
-    ss = SmartStorageSim(env, decoder, bus, face_detector)
+    video_decoder = VideoDecoderSim(env, target_fps=video_fps)
+    ss = SmartStorageSim(env, decoder, bus, face_detector, video_decoder)
 
     def on_complete(t, address, request, value):
         response = Response()
@@ -127,7 +138,7 @@ def run_server(base_dir = '/mnt/hdd/fast20/jpeg/flickr2500', ext='jpg', decoder_
             request.ParseFromString(data)
             # assert request.timestamp < time.time(), "Request from future: {} >= {}".format(request.timestamp, time.time())
             ss.sched_request(request.timestamp, request, address, on_complete)
-        env.run(until=(time.time() + RUN_AHEAD))
+        env.run(until=(time.time() + run_ahead))
 
 if __name__ == '__main__':
     fire.Fire(run_server)

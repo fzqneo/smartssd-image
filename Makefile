@@ -32,6 +32,15 @@ ramfs-down:
 	sudo umount /mnt/ramfs
 
 
+video-ramfs-up:
+	@(if [ ! -z "$(shell mount | grep /mnt/ramfs )" ]; then \
+		echo "ramfs already up: $(shell mount | grep /mnt/ramfs)" >&2; \
+	else \
+		sudo mount -t ramfs -o size=16g ramfs /mnt/ramfs && echo "Created ramfs"; \
+		sudo rsync -a --stats /mnt/hdd/fast20/video/VIRAT/ppm /mnt/ramfs/fast20/; \
+	fi)
+
+
 drop-cache:
 	sync; echo 1 | sudo tee /proc/sys/vm/drop_caches
 	

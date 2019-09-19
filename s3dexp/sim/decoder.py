@@ -1,3 +1,4 @@
+import cv2
 from logzero import logger
 import os
 import simpy
@@ -49,3 +50,42 @@ class DecoderSim(object):
             yield req   # acquire the lock
             yield self.env.timeout(sim_elapsed)
         self.env.exit((width, height))
+
+
+class VideoDecoderSim(object):
+    def __init__(self, env, target_fps, capacity=1):
+        """A "stateful" decoder that only works for one video at a time. Keep tracks of the "current" frame
+        and can skip frames forward."""
+        super(VideoDecoderSim, self).__init__()
+        self.env = env
+        self.target_fps = target_fps
+        self._semaphore = simpy.Resource(env, capacity=capacity)
+        self.current_path = None
+        self.current_frame_id = None
+        self.video_frames = None
+        self.h = self.w = None
+        logger.info("Created VideoDecoderSim at {} FPS".format(self.target_fps))
+
+    def decode_frame(self, path, frame_id):
+        """Assume the client is sending increasing frame_id so we can skip frames here"""
+        if self.current_path != path:
+            # open once to get h,w
+            self.current_path = path
+            self.current_frame_id = 0
+            cap = cv2.VideoCapture(path)
+            self.w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+            self.h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            self.video_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            logger.info("Initiating new video WxH {}x{} {}".format(self.w, self.h, path))
+            cap.release()
+            
+        assert frame_id >= self.current_frame_id
+
+        sim_elapsed = (1. / self.target_fps) * (frame_id - self.current_frame_id)
+        logger.debug("VideoDecoderSim: decoding {} frames, {:.2f} ms".format((frame_id - self.current_frame_id), sim_elapsed*1000))
+        with self._semaphore.request() as req:
+            yield req
+            yield self.env.timeout(sim_elapsed)
+            self.current_frame_id = frame_id    # fast-forward
+        
+        self.env.exit((self.w, self.h))
