@@ -124,6 +124,7 @@ def cv2_decoder(path, context, every=1):
 
 
 def smart_decoder(ss_client, path, context, every=1):
+    
     num_frames = get_num_video_frames(path)
     for frame_id in range(0, num_frames, every):
         arr = ss_client.decode_video(path, frame_id)
@@ -132,10 +133,20 @@ def smart_decoder(ss_client, path, context, every=1):
 
 
 def run(video_path='/mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4', diff_threshold=1000., delta_frames=30, detect=False, every_frame=1, num_workers=4, smart=False, expname=None):
-    """
-    Implement NoScope's frame skipping + difference detector (on whole image) with a moving window of `delta_frames`. That is, each frame is diff'ed with `delta_frames` ago, and 
-    if diff higher than threshold, considered as pass.
-    If `detect` is True, further run object detection on it.
+    """Run NoScope's frame skipping + image difference detection on videos. Optionally, pass passing frames to a DNN object detector.
+    
+    Keyword Arguments:
+        video_path {str} -- Path of a video or directory of videos 
+        diff_threshold {float} -- For the diff detector to fire (default: {1000.})
+        delta_frames {int} -- For diff detector: compare with the frame delta_frames ago (default: {30})
+        detect {bool} -- If true, run DNN on passing frames (default: {False})
+        every_frame {int} -- For frame skipping, run diff detector every `every_frame` (default: {1})
+        num_workers {int} -- Parallel workers (default: {4})
+        smart {bool} -- Use smart disk or not (default: {False})
+        expname {[type]} -- If not None, will store to DB with expname (default: {None})
+    
+    Raises:
+        ValueError: [description]
     """
     # expand paths
     if os.path.isfile(video_path):

@@ -56,7 +56,8 @@ class SmartStorageSim(object):
             callback {function} -- Will be called callback(env.now, request, value) when finished
         """
         op = request.opcode
-        payload = json.loads(request.value)
+        if request.value:
+            payload = json.loads(request.value)
         retval = {'op': op}
 
         if op == OP_DECODEONLY:
@@ -136,6 +137,7 @@ def run_server(base_dir = '/mnt/hdd/fast20/jpeg/flickr2500', ext='jpg', decoder_
             address, empty, data = publisher.recv_multipart()
             request = Request()
             request.ParseFromString(data)
+            logger.debug("Recv request from %s: %s" % (address, MessageToJson(request)))
             # assert request.timestamp < time.time(), "Request from future: {} >= {}".format(request.timestamp, time.time())
             ss.sched_request(request.timestamp, request, address, on_complete)
         env.run(until=(time.time() + run_ahead))

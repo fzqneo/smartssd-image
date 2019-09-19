@@ -6,8 +6,6 @@ Cloning: `git clone --recursive git@github.com:fzqneo/smartssd-image.git`
 
 **FAST'20 submission deadline: 9/26/2019**
 
-![](fast20_arch.png)
-
 
 ## Experiment Infrastructure
 
