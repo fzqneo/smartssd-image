@@ -95,7 +95,13 @@ class SmartStorageSim(object):
         self.env.process(self.serve_request(*args, **kwargs))
 
 
-def run_server(base_dir = '/mnt/hdd/fast20/jpeg/flickr2500', ext='jpg', decoder_mpixps=140., num_decoder=5, bus_mbyteps=2000, face_fps=30., video_fps=120., run_ahead=RUN_AHEAD):
+def run_server(
+    base_dir = '/mnt/hdd/fast20/jpeg/flickr2500', ext='jpg', 
+    decoder_mpixps=140., num_decoder=5, bus_mbyteps=2000, face_fps=30., video_fps=120., 
+    run_ahead=RUN_AHEAD, verbose=False):
+
+    if verbose:
+        logzero.loglevel(logging.DEBUG)
 
     logger.info("Run ahead = {:.2f} ms".format(1000*run_ahead))
 

@@ -28,7 +28,7 @@ class DecoderSim(object):
         logger.info("Found {} decode profiles.".format(len(profiles)))
         orig_mpixps = sum([p.height * p.width / 1e6 for p in profiles]) / sum(p.decode_ms * 1e-3 for p in profiles)
         self.time_scaling = float(orig_mpixps) / target_mpixps
-        logger.info("Original {} MPix/s, target {} MPix/s,  scaling original time by {}x".format(orig_mpixps, target_mpixps, self.time_scaling))
+        logger.info("Original {} MPix/s, target {} MPix/s,  scaling original time by {}x. Capacity {}".format(orig_mpixps, target_mpixps, self.time_scaling, capacity))
 
         # assume basename is suffiently unique
         # look-up table: basename -> target decode time (s), width, height

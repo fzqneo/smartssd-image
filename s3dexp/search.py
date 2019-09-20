@@ -74,10 +74,10 @@ class FilterConfig(object):
 
 class Context(object):
     """Shared data structure by multi processes. Don't update it too frequently."""
-    def __init__(self, manager):
+    def __init__(self, manager, qsize=1000):
         super(Context, self).__init__()
         self.lock = manager.Lock()
-        self.q = manager.JoinableQueue(1000)
+        self.q = manager.JoinableQueue(qsize)
         self.stats = manager.dict(
             num_items=0,
             num_workers=0,

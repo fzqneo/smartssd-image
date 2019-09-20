@@ -133,7 +133,7 @@ class SmartStorageClient(object):
         if late > 1e-5:
             logger.debug("Too late by {:.3f} ms".format(late*1000))
         elif late < -1e-5:
-            logger.debug("Too early by {:.3f} ms".format(late*1000))
+            logger.debug("Too early by {:.3f} ms".format(-late*1000))
         self.late_by = self.late_by * .5 + late * .5    # simple running average
         return response
 
