@@ -17,6 +17,12 @@ detection-up:
 detection-down:
 	docker rm -f s3dexp-detection
 
+fasterrcnn-up:
+	docker run --gpus all --cpuset-cpus="11-14" --name s3dexp-fasterrcnn -p 5000:5000  -d registry.cmusatyalab.org/zf/diamond-public-registry/filter/service@sha256:2baa7250498fb06913ef9902ec54272b7a2a6a7244f01b015fb1d0a7ce801d0f faster_rcnn_resnet101_coco
+
+fasterrcnn-down:
+	docker rm -f s3dexp-fasterrcnn
+
 ramfs-up:
 	@(if [ ! -z "$(shell mount | grep /mnt/ramfs )" ]; then \
 		echo "ramfs already up: $(shell mount | grep /mnt/ramfs)" >&2; \

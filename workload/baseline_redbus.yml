@@ -9,8 +9,9 @@ filters:
     filter: ColorFilter
     kwargs:
       bgr_lb: [0, 0, 200]
-      pixels_threshold: 10000
+      pixels_threshold: 5000
   -
     filter: ObjectDetectionFilter
     kwargs:
       targets: ["bus"]
+      confidence: 0.8

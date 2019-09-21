@@ -95,6 +95,12 @@ python ...
 
 ## Miscellaneous Notes
 
+### face_recognition
+
+```
+curl -F "file=@examples/realObama.jpg" http://localhost:5001 
+```
+
 ### TensorFlow
 
 * tfrecord: https://www.tensorflow.org/tutorials/load_data/tf_records#tfrecords_format_details

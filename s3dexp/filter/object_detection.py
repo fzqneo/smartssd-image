@@ -23,6 +23,8 @@ class ObjectDetectionFilter(Filter):
         self.request_session.mount('https://', adapter)
         self.detect_url = 'http://{}:{}/detect'.format(self.server, self.port)
 
+        logger.info("Targets: {}, confidence {}".format(self.targets, self.confidence))
+
     def __call__(self, item):
         rv, jpg_arr = cv2.imencode('.jpg', item.array)
         assert rv, "Fail to re-encode into jpg"
