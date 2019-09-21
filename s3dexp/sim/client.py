@@ -27,7 +27,7 @@ class SmartStorageClient(object):
         self.map_to_ppm_dir = map_to_ppm_dir
         self.map_from_dir = map_from_dir
 
-        # preload: CAUTION! only used HD videos. may eat a lot of RAM
+        # preload: CAUTION! only used for HD videos. may eat a lot of RAM
         self.preload = preload
         if self.preload:
             logger.warn("Preloading from {}".format(map_to_ppm_dir))

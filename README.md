@@ -95,9 +95,17 @@ python ...
 
 ## Miscellaneous Notes
 
+### Coordinate systems
+
+* OpenCV `cv2.imread` returns (H, W, 3)
+* OpenCV face detection uses (left, top, right, bottom), namely (StartX, StartY, EndX, EndY). Note: in OpenCV's X-Y system, X is along the width (the second dimension), Y is along the height (the first dimension).
+* face_recognition's `face_recognition.face_locations()` returns (top, right, bottom, left)
+* TensorFlow's Object Detection API uses (top, left, bottom, right), and it's normalized between 0 and 1.0
+
 ### face_recognition
 
 ```
+python web_service_example.py
 curl -F "file=@examples/realObama.jpg" http://localhost:5001 
 ```
 

@@ -1,0 +1,10 @@
+expname: smart_obama
+
+filters:
+  -
+    filter: SmartFaceFilter  
+  -
+    filter: ObamaDetectorFilter
+    kwargs:
+      tolerance: 0.6
+    

@@ -9,4 +9,6 @@ filters:
     filter: FaceDetectorFilter
   -
     filter: ObamaDetectorFilter
+    kwargs:
+      tolerance: 0.5
     

@@ -34,15 +34,17 @@ class FaceDetectorFilter(Filter):
 
 
 class ObamaDetectorFilter(Filter):
-    def __init__(self, use_boxes='face_detection'):
+    def __init__(self, use_boxes='face_detection', tolerance=0.4):
 
         """[summary]
 
         Keyword Arguments:
             use_boxes {str} -- Run on list of boxes provided by this attribute. If none, run on whole image (default: {'face_detection'})
+            tolerance {float} -- Smaller means more strict matching. face_recognition author recommends 0.6. But I found it give many FPs.
         """
-        super(ObamaDetectorFilter, self).__init__(use_boxes)
+        super(ObamaDetectorFilter, self).__init__(use_boxes, tolerance)
         self.use_boxes = use_boxes
+        self.tolerance = tolerance
 
     def __call__(self, item):
         # Have to import it after fork:
@@ -64,12 +66,12 @@ class ObamaDetectorFilter(Filter):
             unknown_face_encodings = face_recognition.face_encodings(rgb_arr, known_face_locations=boxes)
 
         for cv2_box, enc in zip(item[self.use_boxes], unknown_face_encodings):
-            match_results = face_recognition.compare_faces([obama_face_encoding,], enc, tolerance=0.4)  # default tolerance=.6 gives too many false positives
+            match_results = face_recognition.compare_faces([obama_face_encoding,], enc, tolerance=self.tolerance)  
             if match_results[0]:
                 if s3dexp.config.VISUALIZE_RESULT:
                     left, top, right, bottom = cv2_box
-                    annotated_arr = cv2.rectangle(item.array, (left, top), (right, bottom), (0,0,255), 5)
-                    vis_path = 'face-annotated-'+os.path.basename(item.src)
+                    annotated_arr = cv2.rectangle(item.array, (left, top), (right, bottom), (0,0,255), 3)
+                    vis_path = 'vis-face-obama-{}.jpg'.format(os.path.basename(item.src))
                     logger.warn("Saving visualized face to {}".format(vis_path))
                     cv2.imwrite(vis_path, annotated_arr)
                 return True
