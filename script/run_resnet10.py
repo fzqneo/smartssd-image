@@ -352,7 +352,7 @@ def main(
 
     elapsed = time.time() - tic
     elapsed_cpu = time.clock() - tic_cpu
-    elapsed_cpu += context.stats['cpu_time']    # TODO add CPU time of workers
+    elapsed_cpu += context.stats['cpu_time']   
 
     logger.info("# batches: {}".format(num_batches))
 

@@ -33,6 +33,14 @@ Cloning: `git clone --recursive git@github.com:fzqneo/smartssd-image.git`
 * Jupyter notebook server: http://cloudlet015.elijah.cs.cmu.edu:8888 (ask me for password)
 
 
+## Run Video Search
+```bash
+python script/video_search.py --every_frame=10 --expname=baseline_videodiff-every10 --num_workers=8
+# To run emulation
+make ramfs-down # destroy ramfs for image data
+make video-ramfs-up
+```
+
 ## Run `make drop-cache` before running experiments
 
 ... if an experiment includes disk read times. This clears the OS page cache.
@@ -94,6 +102,20 @@ python ...
 
 
 ## Miscellaneous Notes
+
+### Coordinate systems
+
+* OpenCV `cv2.imread` returns (H, W, 3)
+* OpenCV face detection uses (left, top, right, bottom), namely (StartX, StartY, EndX, EndY). Note: in OpenCV's X-Y system, X is along the width (the second dimension), Y is along the height (the first dimension).
+* face_recognition's `face_recognition.face_locations()` returns (top, right, bottom, left)
+* TensorFlow's Object Detection API uses (top, left, bottom, right), and it's normalized between 0 and 1.0
+
+### face_recognition
+
+```
+python web_service_example.py
+curl -F "file=@examples/realObama.jpg" http://localhost:5001 
+```
 
 ### TensorFlow
 

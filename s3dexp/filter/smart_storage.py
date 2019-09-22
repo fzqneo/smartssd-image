@@ -24,6 +24,7 @@ class SmartFaceFilter(Filter):
     def __call__(self, item):
         path = item.src
         arr, boxes = self.ss_client.read_decode_face(path)
+        item.array = arr
         item['face_detection'] = boxes
 
         self.session_stats['bytes_from_disk'] += sum(map(lambda b: abs(3*(b[0]-b[2])*(b[1]-b[3])), boxes))

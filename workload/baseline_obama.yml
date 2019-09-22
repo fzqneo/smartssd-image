@@ -1,0 +1,14 @@
+expname: baseline_obama
+
+filters:
+  -
+    filter: SimpleReadFilter
+  -
+    filter: DecodeFilter
+  -
+    filter: FaceDetectorFilter
+  -
+    filter: ObamaDetectorFilter
+    kwargs:
+      tolerance: 0.5
+    

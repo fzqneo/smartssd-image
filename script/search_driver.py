@@ -14,7 +14,7 @@ import s3dexp.db.models as dbmodles
 from s3dexp.filter.bgd_subtract import BackgroundSubtractionFilter
 from s3dexp.filter.color import ColorFilter
 from s3dexp.filter.decoder import DecodeFilter
-from s3dexp.filter.facedetector import FaceDetectorFilter
+from s3dexp.filter.facedetector import FaceDetectorFilter, ObamaDetectorFilter
 from s3dexp.filter.image_hash import ImageHashFilter
 from s3dexp.filter.object_detection import ObjectDetectionFilter
 from s3dexp.filter.reader import SimpleReadFilter
@@ -27,7 +27,13 @@ logzero.loglevel(logging.INFO)
 
 CPU_START = (18, 54)    # pin on NUMA node 1
 
-def run(search_file, base_dir, ext='jpg', num_workers=4, expname_append='', store_result=False, expname=None, sort_fie=False):
+def run(
+    search_file, base_dir, ext='jpg', num_workers=4, expname_append='', 
+    store_result=False, expname=None, sort_fie=False, verbose=False):
+
+    if verbose:
+        logzero.loglevel(logging.DEBUG)
+
     with open(search_file, 'r') as f:
         search_conf = yaml.load(f, Loader=yaml.FullLoader)
 

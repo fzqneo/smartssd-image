@@ -18,7 +18,7 @@ from s3dexp.search import Item
 from s3dexp.sim.client import SmartStorageClient
 from s3dexp.utils import recursive_glob, get_num_video_frames
 
-logzero.loglevel(logging.DEBUG)
+logzero.loglevel(logging.INFO)
 
 CPU_START = (18, 54)    # pin on NUMA node 1
 
@@ -93,6 +93,9 @@ def worker(context, *args, **kwargs):
                 count += 1
                 accept = diff_detector(item, reference)
                 count_accept += int(accept)
+
+                if accept:
+                    logger.debug("Accepted {}".format(item.src))
             else:
                 logger.info("Worker exiting on receiving None")
                 break
@@ -132,7 +135,10 @@ def smart_decoder(ss_client, path, context, every=1):
         yield arr, frame_id
 
 
-def run(video_path='/mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4', diff_threshold=1000., delta_frames=30, detect=False, every_frame=1, num_workers=4, smart=False, expname=None):
+# Use FasterRCNN+ResNet for detection. These video are wide-angle. MobileNet doesn't work well.
+def run(
+    video_path='/mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4', diff_threshold=100., delta_frames=30, every_frame=10, 
+    detect=False, confidence=0.95, num_workers=4, smart=False, expname=None, verbose=False):
     """Run NoScope's frame skipping + image difference detection on videos. Optionally, pass passing frames to a DNN object detector.
     
     Keyword Arguments:
@@ -148,6 +154,10 @@ def run(video_path='/mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000
     Raises:
         ValueError: [description]
     """
+
+    if verbose:
+        logzero.loglevel(logging.DEBUG)
+
     # expand paths
     if os.path.isfile(video_path):
         paths = [video_path]
@@ -170,7 +180,7 @@ def run(video_path='/mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000
     context = Context()
     workers = []
     for _ in range(num_workers):
-        w = threading.Thread(target=worker, args=(context, diff_threshold, detect))
+        w = threading.Thread(target=worker, args=(context, diff_threshold, detect), kwargs={'targets': ['person',], 'confidence': confidence}) # search for persons
         w.daemon = True
         w.start()
         workers.append(w)
@@ -219,6 +229,7 @@ def run(video_path='/mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000
     
     logger.info("Elapsed {:.2f} s, Elapsed CPU {:.2f} s".format(elapsed, elapsed_cpu))
     logger.info(str(context.stats))
+    logger.info("Total frames: {}".format(total_frames))
 
     keys_dict={'expname': expname, 'basedir': str(video_path), 'ext': 'video', 'num_workers': num_workers, 'hostname': this_hostname}
     vals_dict={
