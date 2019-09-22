@@ -18,7 +18,7 @@ from s3dexp.search import Item
 from s3dexp.sim.client import SmartStorageClient
 from s3dexp.utils import recursive_glob, get_num_video_frames
 
-logzero.loglevel(logging.DEBUG)
+logzero.loglevel(logging.INFO)
 
 CPU_START = (18, 54)    # pin on NUMA node 1
 

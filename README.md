@@ -33,6 +33,14 @@ Cloning: `git clone --recursive git@github.com:fzqneo/smartssd-image.git`
 * Jupyter notebook server: http://cloudlet015.elijah.cs.cmu.edu:8888 (ask me for password)
 
 
+## Run Video Search
+```bash
+python script/video_search.py --every_frame=10 --expname=baseline_videodiff-every10 --num_workers=8
+# To run emulation
+make ramfs-down # destroy ramfs for image data
+make video-ramfs-up
+```
+
 ## Run `make drop-cache` before running experiments
 
 ... if an experiment includes disk read times. This clears the OS page cache.
