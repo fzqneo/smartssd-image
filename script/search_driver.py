@@ -28,7 +28,7 @@ logzero.loglevel(logging.INFO)
 CPU_START = (18, 54)    # pin on NUMA node 1
 
 def run(
-    search_file, base_dir, ext='jpg', num_workers=4, expname_append='', 
+    search_file, base_dir, ext='jpg', num_workers=8, expname_append='', 
     store_result=False, expname=None, sort_fie=False, verbose=False):
 
     if verbose:

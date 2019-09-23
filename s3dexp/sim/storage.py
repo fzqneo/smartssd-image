@@ -96,7 +96,7 @@ class SmartStorageSim(object):
 
 
 def run_server(
-    base_dir = '/mnt/hdd/fast20/jpeg/flickr2500', ext='jpg', 
+    base_dir = '/mnt/hdd/fast20/jpeg/flickr50k', ext='jpg', 
     decoder_mpixps=140., num_decoder=5, bus_mbyteps=2000, face_fps=30., video_fps=120., 
     run_ahead=RUN_AHEAD, verbose=False):
 

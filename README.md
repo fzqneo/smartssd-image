@@ -39,6 +39,24 @@ python script/video_search.py --every_frame=10 --expname=baseline_videodiff-ever
 # To run emulation
 make ramfs-down # destroy ramfs for image data
 make video-ramfs-up
+
+# Macro benchmark
+make drop-cache # before each
+python script/video_search.py /mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4 --every_frame=10  --detect --num_workers=8  --expname=marco-pedestrian-hdd
+python script/video_search.py /mnt/ssd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4 --every_frame=10  --detect --num_workers=8 --expname=macro-pedestrian-ssd
+python script/video_search.py /mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4 --every_frame=10  --detect --num_workers=8 --smart --expname=macro-pedestrian-smart
+```
+
+## Run Macro Benchmarks
+```bash
+make ramfs-up
+
+# start emulated storage in another terminal
+
+make drop-cache # before each
+python script/search_driver.py workload/baseline_redbus.yml /mnt/hdd/fast20/jpeg/flickr50k --expname=macro-redbus-hdd --store_result=True
+python script/search_driver.py workload/baseline_redbus.yml /mnt/ssd/fast20/jpeg/flickr50k --expname=macro-redbus-ssd --store_result=True
+python script/search_driver.py workload/smart_redbus.yml /mnt/hdd/fast20/jpeg/flickr50k --expname=macro-redbus-smart --sort_fie=True --store_result=True
 ```
 
 ## Run `make drop-cache` before running experiments
