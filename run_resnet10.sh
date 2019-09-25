@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-WORKERS=${WORKERS:-4}
+WORKERS=${WORKERS:-8}
 BASEDIR=/mnt/hdd/fast20/jpeg/flickr2500
 EXP_APPEND=${EXP_APPEND:-""}
 

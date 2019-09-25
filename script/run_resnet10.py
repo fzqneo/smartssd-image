@@ -1,4 +1,4 @@
-import cv2
+# import cv2
 import fire
 import logging
 import logzero
@@ -26,6 +26,9 @@ from s3dexp.sim.client import SmartStorageClient
 from s3dexp.utils import recursive_glob, get_fie_physical_start
 
 RESOL = (65, 65)
+
+
+# https://github.com/SeanNaren/deepspeech.pytorch/issues/270#issuecomment-377672447
 
 class MyModuleList(nn.ModuleList):
     def __add__(self, x):
@@ -155,12 +158,13 @@ class PytorchResNet(nn.Module):
 
 
 class ImageDataset(torch.utils.data.Dataset):
-    def __init__(self, files, context, transform=None, smart=False):
+    def __init__(self, files, context, transform=None, smart=False, sort_fie=False):
         self.files = files
         self.transform = transform
         self.smart = smart
         self.context = context
         self.ss_client = None
+        self.sort_fie = sort_fie
 
         # Acccording to https://pytorch.org/docs/stable/data.html#multi-process-data-loading
         # This data structure will be passed to multiprocessing if num_workers > 0.
@@ -171,6 +175,8 @@ class ImageDataset(torch.utils.data.Dataset):
         return len(self.files)
 
     def __getitem__(self, idx):
+        import cv2
+
         tic_cpu = time.clock()
 
         if torch.is_tensor(idx):
@@ -178,7 +184,7 @@ class ImageDataset(torch.utils.data.Dataset):
 
         logger.debug("[{}] getitem {}".format(os.getpid(), idx))
 
-        if self.smart:
+        if self.smart or self.sort_fie:
             # idx is ignored. Pop a path from the (pre-sorted) queue
             img_path = self.context.q.get()
         else:
@@ -199,8 +205,13 @@ class ImageDataset(torch.utils.data.Dataset):
             elapsed = time.time() - tic
             logger.debug("Smart decode {:.3f} ms".format(1000*elapsed))
         else:
-            image = default_loader(img_path)
+            # image = default_loader(img_path)
+            # image = pil_loader(img_path)
             disk_read = os.path.getsize(img_path)
+
+            arr = cv2.imread(img_path, cv2.IMREAD_COLOR)
+            image = cv2.resize(arr, RESOL)    # resize here rather than transform
+
 
         # transform
         if self.transform:
@@ -211,7 +222,9 @@ class ImageDataset(torch.utils.data.Dataset):
 
         # high overhead locking
         with self.context.lock:
-            self.context.stats['cpu_time'] += time.clock() - tic_cpu
+            elapsed_cpu = time.clock() - tic_cpu
+            # logger.debug("[{}] Writing to global cotnext: {}, {}".format(os.getpid(), elapsed_cpu, disk_read))
+            self.context.stats['cpu_time'] += elapsed_cpu
             self.context.stats['bytes_from_disk'] += disk_read
 
         return image_tensor
@@ -222,16 +235,19 @@ class ImageDataset(torch.utils.data.Dataset):
 # From:
 # https://github.com/pytorch/vision/blob/master/torchvision/datasets/folder.py#L153
 def pil_loader(path):
-    # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
-    with open(path, 'rb') as f:
-
-        # start = time.time()
-        img = Image.open(f)
-        img = img.convert('RGB')
-        # end = time.time()
-        # print('PIL Jpeg time', end - start)
-        return img
-
+    # # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
+    # with open(path, 'rb') as f:
+    #     # start = time.time()
+    #     img = Image.open(f)
+    #     img = img.convert('RGB')
+    #     # end = time.time()
+    #     # print('PIL Jpeg time', end - start)
+    #     return img
+    import cv2
+    arr = cv2.imread(path, cv2.IMREAD_COLOR)
+    # rgb = cv2.cvtColor(arr, cv2.COLOR_BGR2RGB)
+    # return Image.fromarray(rgb)
+    return arr
 
 def accimage_loader(path):
     import accimage
@@ -243,6 +259,7 @@ def accimage_loader(path):
 
         return img
     except IOError:
+        logger.warn('accimage failed to decode {}'.format(path))
         # Potentially a decoding problem, fall back to PIL.Image
         return pil_loader(path)
 
@@ -260,8 +277,10 @@ CPU_START = (18, 54)    # pin on NUMA node 1
 
 def main(
     base_dir='/mnt/hdd/fast20/jpeg/flickr2500', ext='jpg', 
-    num_workers=4, sort_fie=False, smart=False, batch_size=64,
+    num_workers=8, sort_fie=False, smart=False, batch_size=64,
     verbose=False, use_accimage=True, expname=None):
+
+    assert ext == 'jpg' or not use_accimage, "accimage only works for jpg"
     
     if verbose:
         logzero.loglevel(logging.DEBUG)
@@ -278,6 +297,7 @@ def main(
     # prepare paths
     paths = list(recursive_glob(base_dir, '*.{}'.format(ext)))
     if sort_fie:
+        logger.info("Sorting paths")
         paths = sorted(paths, key=get_fie_physical_start)
     else:
         # deterministic pseudo-random
@@ -313,7 +333,7 @@ def main(
         ])
     else:
         preprocess = transforms.Compose([
-            transforms.Resize(RESOL),
+            # transforms.Resize(RESOL),
             transforms.ToTensor(),
             normalize
         ])
@@ -321,10 +341,10 @@ def main(
     manager = mp.Manager()
     context = Context(manager, qsize=len(paths)+1)
 
-    # hack for smart batch: enque all paths in the beginning to force sequential access
+    # hack for smart batch and basline-sorted: enque all paths in the beginning to force sequential access
     map(context.q.put, paths)
 
-    image_dataset = ImageDataset(paths, context, transform=preprocess, smart=smart)
+    image_dataset = ImageDataset(paths, context, transform=preprocess, smart=smart, sort_fie=sort_fie)
     loader = torch.utils.data.DataLoader(
         image_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers,
         pin_memory=True)
@@ -338,16 +358,17 @@ def main(
     tic = time.time()
     tic_cpu = time.clock()
     num_batches = 0
+    last_batch_time = tic
 
     for image_tensor in loader:
 
         image_tensor = image_tensor.cuda()
         # print image_tensor.shape, image_tensor.dtype
 
-        batch_tic = time.time()
-        output = model(image_tensor)
+        # output = model(image_tensor)
 
-        logger.info("Run batch {} in {:.3f} ms".format(num_batches, 1000*(time.time()-batch_tic)))
+        logger.info("Run batch {} in {:.3f} ms".format(num_batches, 1000*(time.time()-last_batch_time)))
+        last_batch_time = time.time()
         num_batches += 1
 
     elapsed = time.time() - tic
