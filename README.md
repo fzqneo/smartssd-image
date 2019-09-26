@@ -121,6 +121,14 @@ python ...
 
 ## Miscellaneous Notes
 
+### Macro Benchmark Stats
+
+Red Bus: 5/50629 0.01\%
+
+Obama: 2/45791  0.004\%
+
+Pedestrian 508 / 2066 24.5\%
+
 ### Coordinate systems
 
 * OpenCV `cv2.imread` returns (H, W, 3)

@@ -4,11 +4,13 @@ import itertools
 import logging
 import logzero
 from logzero import logger
+import io
 import math
 import multiprocessing as mp
 import numpy as np
 import os
 from PIL import Image
+import Queue
 import psutil
 import random
 import threading
@@ -23,10 +25,7 @@ import torchvision
 from s3dexp import this_hostname
 import s3dexp.db.utils as dbutils
 import s3dexp.db.models as dbmodles
-from s3dexp.filter.decoder import DecodeFilter
-from s3dexp.filter.reader import SimpleReadFilter
-from s3dexp.filter.smart_storage import SmartDecodeFilter, SmartFaceFilter
-from s3dexp.search import Context, Filter, FilterConfig, run_search
+from s3dexp.search import Context
 from s3dexp.sim.client import SmartStorageClient
 from s3dexp.utils import recursive_glob, get_fie_physical_start
 
@@ -161,24 +160,119 @@ class PytorchResNet(nn.Module):
 
         return x
 
+def cv2_loader(path):
+    import cv2
+    arr = cv2.imread(path, cv2.IMREAD_COLOR)
+    return arr
 
-class TransformAndSendFilter(Filter):
+def accimage_loader(path):
+    import accimage
+    try:
+        start = time.time()
+        img = accimage.Image(path)
+        end = time.time()
+        logger.debug('accimage decode {:.3f} ms'.format(1000*(end - start)))
 
-    def __init__(self, transform_fn, out_q, resize_to=RESOL):
-        super(TransformAndSendFilter, self).__init__(transform_fn, out_q)
-        self.transform_fn = transform_fn
-        self.out_q = out_q
-        self.resize_to = resize_to
+        return img
+    except IOError:
+        logger.warn('accimage failed to decode {}'.format(path))
+        # Potentially a decoding problem, fall back to PIL.Image
+        return pil_loader(path)
 
-    def __call__(self, item):
+# From:
+# https://github.com/pytorch/vision/blob/master/torchvision/datasets/folder.py#L153
+def pil_loader(path):
+    # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
+    with open(path, 'rb') as f:
+        # start = time.time()
+        img = Image.open(f)
+        img = img.convert('RGB')
+        # end = time.time()
+        # print('PIL Jpeg time', end - start)
+        return img
+
+def default_loader(path):
+
+    from torchvision import get_image_backend
+    if get_image_backend() == 'accimage':
+        return accimage_loader(path)
+    else:
+        return pil_loader(path)
+
+class ImageDataset(torch.utils.data.Dataset):
+    def __init__(self, files, context, transform=None, smart=False, sort_fie=False, image_loader=default_loader):
+        self.files = files
+        self.transform = transform
+        self.smart = smart
+        self.context = context
+        self.ss_client = None
+        self.sort_fie = sort_fie
+        self.image_loader = image_loader
+
+        # Acccording to https://pytorch.org/docs/stable/data.html#multi-process-data-loading
+        # This data structure will be passed to multiprocessing if num_workers > 0.
+        # So we defer creation of client after the process is created,
+        # otherwise ZMQ doesn't work properly
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, idx):
         import cv2
-        if self.resize_to:
-            arr = cv2.resize(item.array, self.resize_to)
+
+        tic_cpu = time.clock()
+
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        logger.debug("[{}] getitem {}".format(os.getpid(), idx))
+
+        if self.smart or self.sort_fie:
+            # idx is ignored. Pop a path from the (pre-sorted) queue
+            img_path = self.context.q.get()
         else:
-            arr = item.array
-        rv = self.transform_fn(arr)
-        self.out_q.put(rv)
-        return True
+            img_path = self.files[idx]
+
+        # img_path = self.context.q.get()
+
+        # initialize smart client on the first use
+        if self.smart and self.ss_client is None:
+            logger.info("[Worker {}] Creating a SmartStorageClient".format(torch.utils.data.get_worker_info().id))
+            self.ss_client = SmartStorageClient()
+
+        # get decoded Image
+        if self.smart:
+            # PPM
+            tic = time.time()
+            arr = self.ss_client.read_decode(img_path)
+            image = cv2.resize(arr, RESOL)    # resize here rather than transform
+
+            disk_read = arr.size
+            elapsed = time.time() - tic
+            logger.debug("Smart decode {:.3f} ms".format(1000*elapsed))
+        else:
+            image = self.image_loader(img_path)
+            disk_read = os.path.getsize(img_path)
+
+        # transform
+        if self.transform:
+            tic = time.time()
+            image_tensor = self.transform(image)
+            elapsed = time.time() - tic
+            logger.debug("Transform {:.3f} ms".format(1000*elapsed))
+
+        # high overhead locking
+        with self.context.lock:
+            elapsed_cpu = time.clock() - tic_cpu
+            # logger.debug("[{}] Writing to global cotnext: {}, {}".format(os.getpid(), elapsed_cpu, disk_read))
+            self.context.stats['cpu_time'] += elapsed_cpu
+            self.context.stats['bytes_from_disk'] += disk_read
+
+        return image_tensor
+
+    def __del__(self):
+        logger.info("Destroying ImageDataset Worker")
+
 
 
 logzero.loglevel(logging.INFO)
@@ -187,7 +281,12 @@ CPU_START = (26, 62)    # pin on NUMA node 1
 def main(
     base_dir='/mnt/hdd/fast20/jpeg/flickr2500', ext='jpg', 
     num_workers=8, sort_fie=False, smart=False, batch_size=64,
-    verbose=False, expname=None):
+    verbose=False, use_accimage=True, expname=None, loader_workers=None):
+
+    assert ext == 'jpg' or not use_accimage, "accimage only works for jpg"
+    
+    if loader_workers is None:
+        loader_workers = num_workers
 
     if verbose:
         logzero.loglevel(logging.DEBUG)
@@ -210,6 +309,10 @@ def main(
         # deterministic pseudo-random
         random.seed(42)
         random.shuffle(paths)
+    logger.info("Total {} paths".format(len(paths)))
+
+    if use_accimage:
+        torchvision.set_image_backend('accimage')
 
     trn_name = 'trn10'  # taipei-scrubbing.py in Blazeit
     # trn_name = 'trn18'  # end2end.py in Blazeit
@@ -224,42 +327,56 @@ def main(
                 conv1_size=3, conv1_pad=1, nbf=16, downsample_start=False)
     model.cuda()
 
-
-    # prepare the transform pipeline
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                              std=[0.229, 0.224, 0.225])
 
-    # all options use cv2 for decoding and resizing
-    # transform: ndarray -> Tensor
-    preprocess = transforms.Compose([
-        transforms.ToTensor(),
-        normalize
-    ])
-
-    # Queue to collect decoded and preprocessed samples
-    sample_q = mp.Queue()
-
-    # prepare the filter chain
+    # prepare preprocessing pipeline
     if smart:
-        filter_configs = [
-            FilterConfig(SmartDecodeFilter),
-        ]
+        # do resizing using OpenCV in ImageDataSet
+        # because ndarray -> PIL conversion is an overhead
+        preprocess = transforms.Compose([
+            transforms.ToTensor(),
+            normalize
+        ])
     else:
-        filter_configs = [
-            FilterConfig(SimpleReadFilter),
-            FilterConfig(DecodeFilter),
-        ]
-
-    filter_configs.append(FilterConfig(TransformAndSendFilter, args=(preprocess, sample_q)))
+        preprocess = transforms.Compose([
+            transforms.Resize(RESOL),
+            transforms.ToTensor(),
+            normalize
+        ])
 
     manager = mp.Manager()
-    context = Context(manager)
+    context = Context(manager, qsize=len(paths)+1)
 
-    logger.info("warm up DNN with a fake batch")
+    # hack for smart batch and basline-sorted: enque all paths in the beginning to force sequential access
+    map(context.q.put, paths)
+
+    image_dataset = ImageDataset(paths, context, transform=preprocess, smart=smart, sort_fie=sort_fie)
+    loader = torch.utils.data.DataLoader(
+        image_dataset, batch_size=batch_size, shuffle=False, num_workers=loader_workers,
+        pin_memory=False)
+
+    logger.info("warm up with a fake batch")
     fake_batch = torch.zeros([batch_size, 3] + list(RESOL), dtype=torch.float32)
     fake_batch = fake_batch.cuda()
     print fake_batch.shape, fake_batch.dtype
     _ = model(fake_batch)
+
+    # zf: use a separate queue to pre-fetch batches, phew ....
+    # batch_q = Queue.Queue(100)
+    # def batch_prefetcher(loader, q):
+    #     for i, image_tensor in enumerate(loader):
+    #         q.put(image_tensor)
+    #         logger.info("Prefetched batch {}".format(i))
+    #     logger.info("Loader finish.")
+    #     q.put(None)
+
+    # prefetcher_thread = threading.Thread(target=batch_prefetcher, args=(loader, batch_q))
+    # prefetcher_thread.daemon = True
+    # prefetcher_thread.start()
+
+    loaderit = iter(loader)
+    logger.info("Type of iter(loader): {}".format(type(loaderit).__name__))
 
     tic = time.time()
     tic_cpu = time.clock()
@@ -267,14 +384,16 @@ def main(
     last_batch_time = tic
     elapsed_gpu = 0.
 
-    search_thread = threading.Thread(target=run_search, args=(filter_configs, num_workers, paths, context))
-    search_thread.daemon = True
-    search_thread.start()
+    for _ in range(int(len(paths) / batch_size)):
 
-    for batch_id in range(int(len(paths)/batch_size)):
-        image_tensor = torch.stack([sample_q.get() for _ in range(batch_size)])
+        idx, data = loaderit._get_data()
+        loaderit.tasks_outstanding -= 1
+        loaderit._try_put_index()
+        logger.info("Get internal batch {}".format(idx))
+
+        image_tensor = data
+
         image_tensor = image_tensor.cuda()
-        # print image_tensor.shape, image_tensor.dtype
 
         tic_gpu = time.time()
         output = model(image_tensor)
@@ -286,24 +405,20 @@ def main(
         last_batch_time = now
         elapsed_gpu += (now - tic_gpu)
         num_batches += 1
+        # logger.info("loaderiter.task_outstanding: {}".format(datait.tasks_outstanding))
 
-    # flush the last batch
-    for _ in range(len(paths) - num_batches * batch_size):
-        sample_q.get()
 
     elapsed = time.time() - tic
     elapsed_cpu = time.clock() - tic_cpu
-
-    search_thread.join()
-
     elapsed_cpu += context.stats['cpu_time']   
-    num_items = num_batches * batch_size
-    bytes_from_disk = context.stats['bytes_from_disk']
 
     logger.info("# batches: {}".format(num_batches))
     logger.info("GPU time per batch {:.3f} ms, GPU time per image {:.3f} ms".format(1000*elapsed_gpu/num_batches, 1000*elapsed_gpu/num_batches/batch_size))
 
-    logger.info("Elapsed {:.3f} ms, CPU elapsed {:.3f} ms / image".format(1000*elapsed/num_items, 1000*elapsed_cpu/num_items))
+    num_items = len(paths) 
+    bytes_from_disk = context.stats['bytes_from_disk']
+
+    logger.info("Elapsed {:.3f} ms / image, CPU elapsed {:.3f} ms / image".format(1000*elapsed/num_items, 1000*elapsed_cpu/num_items))
     logger.info(str(context.stats))
 
     keys_dict={'expname': expname, 'basedir': base_dir, 'ext': ext, 'num_workers': num_workers, 'hostname': this_hostname}
@@ -326,7 +441,6 @@ def main(
             vals_dict=vals_dict)
         sess.commit()
         sess.close()
-
 
 
 if __name__ == '__main__':
