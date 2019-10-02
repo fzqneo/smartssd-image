@@ -121,12 +121,33 @@ python ...
 
 ## Miscellaneous Notes
 
-### Macro Benchmark Stats
+### Macro Benchmark Paramsand Stats
 
-Red Bus: 5/50629 0.01\%
+#### Red Bus
+```yml
+filters:
+  -
+    filter: SimpleReadFilter
+  -
+    filter: DecodeFilter
+  -
+    filter: ColorFilter
+    kwargs:
+      bgr_lb: [0, 0, 180]
+      pixels_threshold: 5000
+  -
+    filter: ObjectDetectionFilter
+    kwargs:
+      targets: ["bus"]
+      confidence: 0.8
+```
 
+50629, 1170 (2.3%), 5 (0.001%)
+
+#### Obama
 Obama: 2/45791  0.004\%
 
+#### Pedestraian
 Pedestrian 508 / 2066 24.5\%
 
 ### Coordinate systems

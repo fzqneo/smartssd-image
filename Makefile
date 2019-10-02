@@ -12,13 +12,13 @@ db-backup:
 	docker exec s3dexp-db /usr/bin/mysqldump -u root --password=${DB_PASSWORD} --all-databases > /mnt/ssd2/fast20-mysql-bk/backup-$$(date +%Y%m%d).sql
 
 detection-up:
-	docker run --gpus all --cpuset-cpus="11-14" --name s3dexp-detection -p 5000:5000  -d registry.cmusatyalab.org/zf/diamond-public-registry/filter/service@sha256:2baa7250498fb06913ef9902ec54272b7a2a6a7244f01b015fb1d0a7ce801d0f ssd_mobilenet_coco
+	docker run --gpus all --cpuset-cpus="0-15" --name s3dexp-detection -p 5000:5000 -e PER_PROCESS_GPU_MEMORY_FRACTION=0.95 -e SERVER_SLEEP=0.1  -d registry.cmusatyalab.org/zf/diamond-public-registry/filter/service ssd_mobilenet_coco
 
 detection-down:
 	docker rm -f s3dexp-detection
 
 fasterrcnn-up:
-	docker run --gpus all --cpuset-cpus="11-14" --name s3dexp-fasterrcnn -p 5000:5000  -d registry.cmusatyalab.org/zf/diamond-public-registry/filter/service@sha256:2baa7250498fb06913ef9902ec54272b7a2a6a7244f01b015fb1d0a7ce801d0f faster_rcnn_resnet101_coco
+	docker run --gpus all --cpuset-cpus="0-15" --name s3dexp-fasterrcnn -p 5000:5000 -e BATCH_SIZE=8 -e PER_PROCESS_GPU_MEMORY_FRACTION=0.95 -e SERVER_SLEEP=0.1 -d registry.cmusatyalab.org/zf/diamond-public-registry/filter/service faster_rcnn_resnet101_coco
 
 fasterrcnn-down:
 	docker rm -f s3dexp-fasterrcnn
