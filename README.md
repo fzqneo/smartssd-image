@@ -43,8 +43,9 @@ make video-ramfs-up
 
 # Macro benchmark
 make drop-cache # before each
-python script/video_search.py /mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4 --every_frame=10  --detect --num_workers=8  --expname=marco-pedestrian-hdd
+python script/video_search.py /mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4 --every_frame=10  --detect --num_workers=8  --expname=macro-pedestrian-hdd
 python script/video_search.py /mnt/ssd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4 --every_frame=10  --detect --num_workers=8 --expname=macro-pedestrian-ssd
+# smart emulator beforehand
 python script/video_search.py /mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4 --every_frame=10  --detect --num_workers=8 --smart --expname=macro-pedestrian-smart
 ```
 
@@ -58,6 +59,7 @@ make ramfs-up
 make drop-cache # before each
 python script/search_driver.py workload/baseline_redbus.yml /mnt/hdd/fast20/jpeg/flickr50k --expname=macro-redbus-hdd --store_result=True
 python script/search_driver.py workload/baseline_redbus.yml /mnt/ssd/fast20/jpeg/flickr50k --expname=macro-redbus-ssd --store_result=True
+# smart emulator beforehand
 python script/search_driver.py workload/smart_redbus.yml /mnt/hdd/fast20/jpeg/flickr50k --expname=macro-redbus-smart --sort_fie=True --store_result=True
 ```
 
@@ -65,17 +67,6 @@ python script/search_driver.py workload/smart_redbus.yml /mnt/hdd/fast20/jpeg/fl
 ```bash
 python script/run_resnet10.py /mnt/hdd/fast20/jpeg/flickr50k --batch_size=64
 ```
-
-## Run `make drop-cache` before running experiments
-
-... if an experiment includes disk read times. This clears the OS page cache.
-
-## Running Eureka-ish image filtering
-
-```bash
-python script/search_driver.py workload/simple_read_decode.yml /mnt/hdd/fast20/jpeg/flickr2500 --num_workers=8
-```
-See workload/*.yml for example workload files.
 
 ### Start the Emulated Smart Disk
 ```bash
@@ -95,17 +86,20 @@ python script/search_driver.py ...
 6. Add the alembic/versions/xxx.py file to git repo
 
 
+## Create a ramfs to hold PPM files of decoded JPEG or video frames
+
+```bash
+# for image data
+make ramfs-up
+# for video data
+make video-ramfs-up
+# remove it
+make ramfs-down
+```
+
 ## Running TensorFlow batch inference
 ```bash
 python script/profile_mobilenet_batch.py /mnt/hdd/fast20/jpeg/flickr2500  --batch_size=64 
-```
-
-## Create a ramfs to hold PPM files
-
-```bash
-make ramfs-up
-# remove it
-make ramfs-down
 ```
 
 ## Run programs under cgroup to isolate resource
@@ -123,7 +117,6 @@ conda deactivate
 conda activate s3dexp-mkl
 python ...
 ```
-
 
 ## Miscellaneous Notes
 
@@ -144,6 +137,7 @@ It means > 40,000 images / sec.
 ### Macro Benchmark Params and Stats
 
 #### Red Bus
+Selectivity: total 50629, red 1170 (2.3%), bus 5 (0.001%)  
 ```yml
 filters:
   -
@@ -163,24 +157,32 @@ filters:
 ```
 
 #### Obama
-Obama: 2/45791  0.004\%
+Selectivity: total 45891, face ???, Obama 2 (0.004%)
+```yml
+filters:
+  -
+    filter: SimpleReadFilter
+  -
+    filter: DecodeFilter
+  -
+    filter: FaceDetectorFilter
+  -
+    filter: ObamaDetectorFilter
+    kwargs:
+      tolerance: 0.5
+```
 
-Pedestrian 508 / 20655 2.45\%
+#### Pedestrian
+Selectivity: 20655 (frames), frame skipping (10%), image difference ???, human 508 (2.45%)
 
 
-### Coordinate systems
+#### Coordinate systems
 
 * OpenCV `cv2.imread` returns (H, W, 3)
 * OpenCV face detection uses (left, top, right, bottom), namely (StartX, StartY, EndX, EndY). Note: in OpenCV's X-Y system, X is along the width (the second dimension), Y is along the height (the first dimension).
 * face_recognition's `face_recognition.face_locations()` returns (top, right, bottom, left)
 * TensorFlow's Object Detection API uses (top, left, bottom, right), and it's normalized between 0 and 1.0
 
-### face_recognition
-
-```
-python web_service_example.py
-curl -F "file=@examples/realObama.jpg" http://localhost:5001 
-```
 
 ### TensorFlow
 
