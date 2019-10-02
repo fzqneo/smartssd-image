@@ -1,6 +1,6 @@
-Smart Disk for Machine Learning
+Smart Disk for Visual Data Analytics
 
-s3d (previously "Smart SSD", now maybe "Somewhat Smart Spinning Disk"?)
+s3dexp (previously "Smart SSD", now maybe "Somewhat Smart Spinning Disk"?)
 
 Cloning: `git clone --recursive git@github.com:fzqneo/smartssd-image.git`
 
@@ -35,19 +35,22 @@ Cloning: `git clone --recursive git@github.com:fzqneo/smartssd-image.git`
 
 ## Run Video Search
 ```bash
+# The script is specific to frame skipping + image difference detection [+ object detection]
 python script/video_search.py --every_frame=10 --expname=baseline_videodiff-every10 --num_workers=8
-# To run emulation
+# To run with emulated smart disk
 make ramfs-down # destroy ramfs for image data
 make video-ramfs-up
 
 # Macro benchmark
 make drop-cache # before each
-python script/video_search.py /mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4 --every_frame=10  --detect --num_workers=8  --expname=marco-pedestrian-hdd
+python script/video_search.py /mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4 --every_frame=10  --detect --num_workers=8  --expname=macro-pedestrian-hdd
 python script/video_search.py /mnt/ssd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4 --every_frame=10  --detect --num_workers=8 --expname=macro-pedestrian-ssd
+# smart emulator beforehand
 python script/video_search.py /mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4 --every_frame=10  --detect --num_workers=8 --smart --expname=macro-pedestrian-smart
 ```
 
-## Run Macro Benchmarks
+## Run Image Macro Benchmarks
+Red bus and Obama.
 ```bash
 make ramfs-up
 
@@ -56,22 +59,16 @@ make ramfs-up
 make drop-cache # before each
 python script/search_driver.py workload/baseline_redbus.yml /mnt/hdd/fast20/jpeg/flickr50k --expname=macro-redbus-hdd --store_result=True
 python script/search_driver.py workload/baseline_redbus.yml /mnt/ssd/fast20/jpeg/flickr50k --expname=macro-redbus-ssd --store_result=True
+# smart emulator beforehand
 python script/search_driver.py workload/smart_redbus.yml /mnt/hdd/fast20/jpeg/flickr50k --expname=macro-redbus-smart --sort_fie=True --store_result=True
 ```
 
-## Run `make drop-cache` before running experiments
-
-... if an experiment includes disk read times. This clears the OS page cache.
-
-## Running Eureka-ish image filtering
-
+## Run ResNet10
 ```bash
-python script/search_driver.py workload/simple_read_decode.yml /mnt/hdd/fast20/jpeg/flickr2500 --num_workers=16
+python script/run_resnet10.py /mnt/hdd/fast20/jpeg/flickr50k --batch_size=64
 ```
 
-See workload/*.yml about how to define a workload.
-
-### Running workload with emulated smart storage
+### Start the Emulated Smart Disk
 ```bash
 # in a separate terminal, run this first
 python s3dexp/sim/storage.py --base_dir=/mnt/hdd/fast20/jpeg/flickr2500
@@ -86,20 +83,23 @@ python script/search_driver.py ...
 3. `alembic revision --autogenerate -m "Some message here"`
 4. Check the auto-generated file alembic/versions/xxxxxx_xxxxxxxxx.py
 5. `alembic upgrade head` -- this will actually update the DB schema
-6. Add the alembic/versions/xxx.py file to repo
+6. Add the alembic/versions/xxx.py file to git repo
 
+
+## Create a ramfs to hold PPM files of decoded JPEG or video frames
+
+```bash
+# for image data
+make ramfs-up
+# for video data
+make video-ramfs-up
+# remove it
+make ramfs-down
+```
 
 ## Running TensorFlow batch inference
 ```bash
 python script/profile_mobilenet_batch.py /mnt/hdd/fast20/jpeg/flickr2500  --batch_size=64 
-```
-
-## Create a ramfs to hold PPM files
-
-```bash
-make ramfs-up
-# remove it
-make ramfs-down
 ```
 
 ## Run programs under cgroup to isolate resource
@@ -118,30 +118,71 @@ conda activate s3dexp-mkl
 python ...
 ```
 
-
 ## Miscellaneous Notes
 
-### Macro Benchmark Stats
+### ResNet10 on GTX 1080 Ti
+|Batch size | ms / image |
+| --- | --- |
+| 64 | 0.099 |
+|128 | 0.063 |
+|256 | 0.049 |
+|512 | 0.024 |
 
-Red Bus: 5/50629 0.01\%
+It means > 40,000 images / sec.
 
-Obama: 2/45791  0.004\%
+### Face in YFCC100M
 
-Pedestrian 508 / 2066 24.5\%
+23\% images have face. Average face 97x127 pixels.
 
-### Coordinate systems
+### Macro Benchmark Params and Stats
+
+#### Red Bus
+Selectivity: total 50629, red 1170 (2.3%), bus 5 (0.001%)  
+```yml
+filters:
+  -
+    filter: SimpleReadFilter
+  -
+    filter: DecodeFilter
+  -
+    filter: ColorFilter
+    kwargs:
+      bgr_lb: [0, 0, 180]
+      pixels_threshold: 5000
+  -
+    filter: ObjectDetectionFilter
+    kwargs:
+      targets: ["bus"]
+      confidence: 0.8
+```
+
+#### Obama
+Selectivity: total 45891, face ???, Obama 2 (0.004%)
+```yml
+filters:
+  -
+    filter: SimpleReadFilter
+  -
+    filter: DecodeFilter
+  -
+    filter: FaceDetectorFilter
+  -
+    filter: ObamaDetectorFilter
+    kwargs:
+      tolerance: 0.5
+```
+
+#### Pedestrian
+Selectivity: 20655 (frames), frame skipping (10%), image difference ???, human 508 (2.45%)
+
+
+#### Coordinate systems
 
 * OpenCV `cv2.imread` returns (H, W, 3)
 * OpenCV face detection uses (left, top, right, bottom), namely (StartX, StartY, EndX, EndY). Note: in OpenCV's X-Y system, X is along the width (the second dimension), Y is along the height (the first dimension).
 * face_recognition's `face_recognition.face_locations()` returns (top, right, bottom, left)
 * TensorFlow's Object Detection API uses (top, left, bottom, right), and it's normalized between 0 and 1.0
 
-### face_recognition
-
-```
-python web_service_example.py
-curl -F "file=@examples/realObama.jpg" http://localhost:5001 
-```
 
 ### TensorFlow
 
@@ -246,8 +287,9 @@ Emulated Storage:
 - [x] Implement emulated JPEG ASIC that scales decode time based on software decode time
 
 Applications:
-- [ ] Macro benchmarks
+- [ ] Improve object detection DNN efficiency on GPU. Maybe batching (Edmond)
 - [ ] Find a few more filters from related papers
+- [x] Macro benchmarks
 - [x] Create MobileNet filter (that connects to a web service) (Edmond)
 - [x] Add face detection filter (Shilpa)
 - [x] RGB hist 2D filter, background subtraction filter, perceptual hashing filter (Shilpa)
@@ -256,7 +298,7 @@ Applications:
 - [x] RGB color histogram (Edmond)
 
 TensorFlow Application:
-- [ ] Use Active Disk in 10-layers ResNet (Edmond)
+- [x] Use Active Disk in 10-layers ResNet (Edmond)
 - [x] 10-layer ResNet. Refer to [BlazeIt](https://arxiv.org/abs/1805.01046) (Roger)
 - [x] MobileNet inference (Edmond)
 - [x] Create batching example using tf.data.Dataset (Edmond)
@@ -285,8 +327,8 @@ Data:
 - [x] Convert and save image in PPM format
 
 Literature survey:
+- [ ] Reference numbers of ASIC for PNG decoding
 - [x] Reference numbers of video decoding hardware
 - [x] Reference numbers of ASIC for face detection
-- [ ] Reference numbers of ASIC for PNG decoding
-- [ ] FAST papers 2005 - 2019. Keyword: smart disk, active disk, disk simulation/emulation (Edmond)
+- [x] FAST papers 2005 - 2019. Keyword: smart disk, active disk, disk simulation/emulation (Edmond)
 - [x] Reference numbers of ASIC for JPEG decoding (Shilpa)

@@ -138,7 +138,7 @@ def smart_decoder(ss_client, path, context, every=1):
 # Use FasterRCNN+ResNet for detection. These video are wide-angle. MobileNet doesn't work well.
 def run(
     video_path='/mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4', diff_threshold=100., delta_frames=30, every_frame=10, 
-    detect=False, confidence=0.95, num_workers=4, smart=False, expname=None, verbose=False):
+    detect=False, confidence=0.95, num_workers=8, smart=False, expname=None, verbose=False):
     """Run NoScope's frame skipping + image difference detection on videos. Optionally, pass passing frames to a DNN object detector.
     
     Keyword Arguments:
