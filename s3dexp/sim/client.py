@@ -27,7 +27,8 @@ class SmartStorageClient(object):
         self.map_to_ppm_dir = map_to_ppm_dir
         self.map_from_dir = map_from_dir
 
-        # preload: CAUTION! only used for HD videos. may eat a lot of RAM
+        # preload: CAUTION! only used for HD videos because loading/decoding HD frames is still somewhat slow. 
+        # may eat a lot of RAM
         self.preload = preload
         if self.preload:
             logger.warn("Preloading from {}".format(map_to_ppm_dir))
@@ -91,7 +92,8 @@ class SmartStorageClient(object):
         self._send_reqeust(request)
 
         # 2. Load PPM
-        # hard code mapping scheme for videos
+        # hard code mapping scheme for videos: map_from_dir is not used
+        # <map_to_ppm_dir>/video_name_without_ext/%06d.ppm
         vid_name = os.path.splitext(os.path.basename(path))[0]
         ppm_path = os.path.join(self.map_to_ppm_dir, vid_name, '%06d.ppm' % (frame_id+1)) # ffmpeg start at 1
         if self.preload:

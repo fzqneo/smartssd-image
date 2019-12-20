@@ -1,4 +1,5 @@
 import fire
+import json
 import logging
 import logzero
 from logzero import logger
@@ -12,6 +13,7 @@ from s3dexp import this_hostname
 import s3dexp.db.utils as dbutils
 import s3dexp.db.models as dbmodles
 from s3dexp.filter.bgd_subtract import BackgroundSubtractionFilter
+from s3dexp.filter.classification import ClassificationFilter
 from s3dexp.filter.color import ColorFilter
 from s3dexp.filter.decoder import DecodeFilter
 from s3dexp.filter.facedetector import FaceDetectorFilter, ObamaDetectorFilter
@@ -49,6 +51,7 @@ def run(
     # prepare expname
     if not expname:
         expname = search_conf['expname']
+        logger.warn("No expname given. Use from {}: {}".format(search_file, expname))
     expname = expname + expname_append
     logger.info("Using expname: {}".format(expname))
 
@@ -87,10 +90,11 @@ def run(
                     'avg_mbyteps': context.stats['bytes_from_disk'] * 1e-6 / elapsed,
                 }
 
-    logger.info(str(keys_dict))
-    logger.info(str(vals_dict))
+    logger.info(json.dumps(keys_dict))
+    logger.info(json.dumps(vals_dict))
 
     if store_result:
+        logger.warn("Writing result to DB expname={}".format(expname))
         sess = dbutils.get_session()
         dbutils.insert_or_update_one(
             sess, 

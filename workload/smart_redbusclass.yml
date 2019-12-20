@@ -1,0 +1,15 @@
+expname: smart_redbusclass
+
+filters:
+  -
+    filter: SmartDecodeFilter
+  -
+    filter: ColorFilter
+    kwargs:
+      bgr_lb: [0, 0, 180]
+      pixels_threshold: 5000
+  -
+    filter: ClassificationFilter
+    kwargs:
+      targets: ["school bus", "minibus", "trolleybus"]
+      confidence: 0.8

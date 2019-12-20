@@ -42,7 +42,8 @@ make ramfs-down # destroy ramfs for image data
 make video-ramfs-up
 
 # Macro benchmark
-make drop-cache # before each
+make frcnn-up # for human detection
+make drop-cache # before each run
 python script/video_search.py /mnt/hdd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4 --every_frame=10  --detect --num_workers=8  --expname=macro-pedestrian-hdd
 python script/video_search.py /mnt/ssd/fast20/video/VIRAT/mp4/VIRAT_S_000200_02_000479_000635.mp4 --every_frame=10  --detect --num_workers=8 --expname=macro-pedestrian-ssd
 # smart emulator beforehand
@@ -59,7 +60,7 @@ make ramfs-up
 make drop-cache # before each
 python script/search_driver.py workload/baseline_redbus.yml /mnt/hdd/fast20/jpeg/flickr50k --expname=macro-redbus-hdd --store_result=True
 python script/search_driver.py workload/baseline_redbus.yml /mnt/ssd/fast20/jpeg/flickr50k --expname=macro-redbus-ssd --store_result=True
-# smart emulator beforehand
+# start emulator beforehand
 python script/search_driver.py workload/smart_redbus.yml /mnt/hdd/fast20/jpeg/flickr50k --expname=macro-redbus-smart --sort_fie=True --store_result=True
 ```
 
@@ -83,7 +84,7 @@ python script/search_driver.py ...
 3. `alembic revision --autogenerate -m "Some message here"`
 4. Check the auto-generated file alembic/versions/xxxxxx_xxxxxxxxx.py
 5. `alembic upgrade head` -- this will actually update the DB schema
-6. Add the alembic/versions/xxx.py file to git repo
+6. git add alembic/versions/xxx.py
 
 
 ## Create a ramfs to hold PPM files of decoded JPEG or video frames
@@ -176,7 +177,15 @@ filters:
 Selectivity: 20655 (frames), frame skipping (10%), image difference ???, human 508 (2.45%)
 
 
-#### Coordinate systems
+### ffmpeg
+
+```bash
+# split video into frames
+ffmpeg -i video1.mp4 video1/%06d.jpg -hide_banner
+# also works for %06d.ppm
+```
+
+### Coordinate systems
 
 * OpenCV `cv2.imread` returns (H, W, 3)
 * OpenCV face detection uses (left, top, right, bottom), namely (StartX, StartY, EndX, EndY). Note: in OpenCV's X-Y system, X is along the width (the second dimension), Y is along the height (the first dimension).
@@ -287,7 +296,7 @@ Emulated Storage:
 - [x] Implement emulated JPEG ASIC that scales decode time based on software decode time
 
 Applications:
-- [ ] Improve object detection DNN efficiency on GPU. Maybe batching (Edmond)
+- [x] Improve object detection DNN efficiency on GPU. Maybe batching (Edmond)
 - [ ] Find a few more filters from related papers
 - [x] Macro benchmarks
 - [x] Create MobileNet filter (that connects to a web service) (Edmond)
