@@ -14,8 +14,11 @@ _pretty_names = {
     'face': 'Face',
     'resnet10': 'ResNet10',
     'redbus': 'RedBus',
+    'redbusclass': 'RedBus-fast',
     'obama': 'Obama',
-    'pedestrian': 'Pedestrian'
+    'pedestrian': 'Pedestrian',
+    'pedestrian10': 'Pedestrian-10\%',
+    'pedestrian50': 'Pedestrian-50\%'
 }
 
 def pretty(name):
