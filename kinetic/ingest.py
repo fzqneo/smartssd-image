@@ -25,12 +25,13 @@ def ingest(dir_path, drive_ip, ext='.jpg'):
         You can handle each callback without passing any information or data
         in from the original call.
         """
-        print("\t\tBC: received ackSeq: "+str(cmd.header.ackSequence)+\
-                    ", msgType: "+str(MsgTypes.Name(cmd.header.messageType))+\
-                    ", statusCode: "+str(StatusCodes.Name(cmd.status.code)))
+        # print("\t\tBC: received ackSeq: "+str(cmd.header.ackSequence)+\
+        #             ", msgType: "+str(MsgTypes.Name(cmd.header.messageType))+\
+        #             ", statusCode: "+str(StatusCodes.Name(cmd.status.code)))
         assert cmd.status.code == kinetic_pb2.Command.Status.SUCCESS
 
     try:
+        client.queue_depth = 5
         client.callback_delegate = basic_callback
         tic = time.time()
         count = 0
@@ -44,7 +45,7 @@ def ingest(dir_path, drive_ip, ext='.jpg'):
                 print("{} is too large: {} Skip.".format(p, len(payload)))
                 large_files.append(str(p))
                 continue
-            print(i, "ingesting k={}, val=({}), {}".format(key, len(payload), p))
+            # print(i, "ingesting k={}, val=({}), {}".format(key, len(payload), p))
             client.put(key, payload, force=True, synchronization=2) # 1 - writethrough, 2 - writeback
             count += 1
             size += len(payload)
