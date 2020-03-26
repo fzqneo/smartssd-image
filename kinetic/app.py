@@ -11,12 +11,13 @@ from kv_client import Client, kinetic_pb2
 StatusCodes = kinetic_pb2.Command.Status.StatusCode
 MsgTypes = kinetic_pb2.Command.MessageType
 
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 app = flask.Flask(__name__)
 
-requests = Queue()   # new GETs appended here
-responses = dict()  # key -> value inserted here when done
+manager = mp.Manager()
+requests = manager.Queue()   # new GETs appended here
+responses = manager.dict()  # key -> value inserted here when done
 
 def serve_requests(drive_ip, requests, responses):
     client = Client(drive_ip)
@@ -94,7 +95,10 @@ def emget(key, wait, size):
 
 
 def main(drive_ip, port=5567):
-    threading.Thread(target=serve_requests, args=(drive_ip, requests, responses,), name='serve_requests').start()
+    # threading.Thread(target=serve_requests, args=(drive_ip, requests, responses,), name='serve_requests').start()
+    serve_thread = mp.Process(target=serve_requests, args=(drive_ip, requests, responses,), name='serve_requests')
+    serve_thread.daemon = True
+    serve_thread.start()
     app.run(host='0.0.0.0', port=port, threaded=True)
 
 

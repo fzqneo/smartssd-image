@@ -102,7 +102,7 @@ def app_get(dir_path, drive_ip='localhost', port=5567, ext='.jpg', shuffle=False
                 L.count += 1
                 stats['count'] += 1
                 stats['size'] += len(r.content)
-                print("{}:{}:{}".format(threading.current_thread().name, L.count, key))
+                # print("{}:{}:{}".format(threading.current_thread().name, L.count, key))
             except IndexError:
                 break
         print("\tWorker exiting: {}. Processed {}".format(threading.current_thread().name, L.count))
