@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 from collections import deque
 import fire
+import multiprocessing as mp
 from pathlib import *
 import random
 import requests
@@ -15,7 +16,22 @@ StatusCodes = kinetic_pb2.Command.Status.StatusCode
 MsgTypes = kinetic_pb2.Command.MessageType
 
 
-def gets(dir_path, drive_ip, ext='.jpg', shuffle=False, queue_depth=5):
+def gets(dir_path, drive_ip, ext='.jpg', shuffle=False, queue_depth=16):
+    """Similar to shenzi/perf/Gets but get keys based on a real directory.
+    Uses a single kv_client in the main process. 
+    
+    Arguments:
+        dir_path {[type]} -- [description]
+        drive_ip {[type]} -- [description]
+    
+    Keyword Arguments:
+        ext {str} -- [description] (default: {'.jpg'})
+        shuffle {bool} -- [description] (default: {False})
+        queue_depth {int} -- [description] (default: {16})
+    
+    Raises:
+        IOError: [description]
+    """
     d = Path(dir_path)
     assert d.is_dir()
 
@@ -26,7 +42,7 @@ def gets(dir_path, drive_ip, ext='.jpg', shuffle=False, queue_depth=5):
 
     client = Client(drive_ip)
     client.connect()
-    assert client.is_connected, "Failed to connect to drive"
+    assert client.is_connected, "Failed to connect to drive " + drive_ip
 
     tic = time.time()
     stats = {
@@ -60,13 +76,15 @@ def gets(dir_path, drive_ip, ext='.jpg', shuffle=False, queue_depth=5):
             client.get(key)
 
             if i % 1000 == 0:
+                toc = time.time()
                 count, size = stats['count'], stats['size']
-                print("Get {} files, {} bytes, tput {} MB/s".format(count, size, size / 1e6 / (time.time()-tic)))
+                print("Get {} files, {} bytes, tput {} file/s, {} MB/s".format(count, size, count / (toc-tic), size / 1e6 / (toc-tic)))
  
         client.wait_q(0)   
 
         count, size = stats['count'], stats['size']
-        print("Get {} files, {} bytes, tput {} MB/s".format(count, size, size / 1e6 / (time.time()-tic)))
+        toc = time.time()
+        print("Get {} files, {} bytes, tput {} file/s, {} MB/s".format(count, size, count / (toc-tic), size / 1e6 / (toc -tic)))
         print("Success")
     except:
         print("Issued:", i, key)
@@ -76,6 +94,18 @@ def gets(dir_path, drive_ip, ext='.jpg', shuffle=False, queue_depth=5):
 
 
 def app_get(dir_path, drive_ip='localhost', port=5567, ext='.jpg', shuffle=False, num_threads=4):
+    """GET perf test using our web app. Multiprocessing is used to maximize throughput.
+    
+    Arguments:
+        dir_path {[type]} -- [description]
+    
+    Keyword Arguments:
+        drive_ip {str} -- [description] (default: {'localhost'})
+        port {int} -- [description] (default: {5567})
+        ext {str} -- [description] (default: {'.jpg'})
+        shuffle {bool} -- [description] (default: {False})
+        num_threads {int} -- [description] (default: {4})
+    """
     d = Path(dir_path)
     assert d.is_dir()
 
@@ -84,38 +114,48 @@ def app_get(dir_path, drive_ip='localhost', port=5567, ext='.jpg', shuffle=False
     print("{} files. shuffle: {}".format(len(key_list), shuffle))
     print("\t\n".join(key_list[:5]))
 
-    q = deque(key_list)
+    q = mp.JoinableQueue(100)
 
-    stats = {
+    stats_lock = mp.Lock()
+    stats = mp.Manager().dict({
         'count': 0,
         'size': 0
-    }
+    })
  
     def get_worker(q):
-        print("\tWorker starting: {}".format(threading.current_thread().name))
+        print("[{}, {}] Worker starts".format(mp.current_process().pid, threading.current_thread().name))
         L = threading.local()
         L.count = 0
+        L.size = 0
         while True:
-            try:
-                key = q.popleft()
-                r = requests.get("http://{}:{}/get/{}".format(drive_ip, port, key))
-                L.count += 1
-                stats['count'] += 1
-                stats['size'] += len(r.content)
-                # print("{}:{}:{}".format(threading.current_thread().name, L.count, key))
-            except IndexError:
+            key = q.get()
+            if key is None:
+                q.task_done()
                 break
-        print("\tWorker exiting: {}. Processed {}".format(threading.current_thread().name, L.count))
+            r = requests.get("http://{}:{}/get/{}".format(drive_ip, port, key))
+            L.count += 1
+            L.size += len(r.content)
+            q.task_done()
+            # print("{}:{}:{}".format(threading.current_thread().name, L.count, key))
+        with stats_lock:
+            stats['count'] += L.count
+            stats['size'] += L.size
+        print("[{}, {}] Worker exiting. Processed {}".format(mp.current_process().pid, threading.current_thread().name, L.count))
 
     tic = time.time()
-    workers = [threading.Thread(target=get_worker, args=(q,)) for _ in range(num_threads)]
+    # workers = [threading.Thread(target=get_worker, args=(q,), name='worker-%d' % i) for i in range(num_threads)]
+    workers = [mp.Process(target=get_worker, args=(q,), name='worker-%d' % i) for i in range(num_threads)]
     [w.start() for w in workers]
+    for k in tqdm(key_list):
+        q.put(k)
+    [q.put(None) for w in workers]
+    q.join()
     [w.join() for w in workers]
 
     count, size = stats['count'], stats['size']
-    print("Get {} files, {} bytes, tput {} MB/s".format(count, size, size / 1e6 / (time.time()-tic)))
-    print("Success")
-
+    toc = time.time()
+    print("Get {} files, {} bytes, tput {} file/s, {} MB/s".format(count, size, count / (toc-tic), size / 1e6 / (toc -tic)))
+    assert count == len(key_list)
 
 if __name__ == "__main__":
     fire.Fire()    
