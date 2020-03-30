@@ -5,12 +5,15 @@ import logging
 from logzero import logger
 import multiprocessing as mp
 import threading
+import time
 from Queue import Queue
 
 # seagate
 from kv_client import Client, kinetic_pb2
 StatusCodes = kinetic_pb2.Command.Status.StatusCode
 MsgTypes = kinetic_pb2.Command.MessageType
+
+# logging.getLogger('werkzeug').setLevel(logging.ERROR)  # Disable noisy "POST /infer HTTP/1.1 200 -" type messages
 
 logger.setLevel(logging.INFO)
 
@@ -94,10 +97,38 @@ def get(key):
         sm_available_idx.add(sm_idx)
 
 
-@app.route('/emget/<key>/<float:wait>/<int:size>')
-def emget(key, wait, size):
-    """Emulated get on active disks"""
-    raise NotImplementedError()
+@app.route('/getsmart/<key>')
+@app.route('/getsmart/<key>/<int:size>')
+@app.route('/getsmart/<key>/<int:size>/<float:wait>')
+def getsmart(key, size=None, wait=None):
+    """Emulated augmented get on active disks"""
+    key = bytes(key)
+    sm_idx = sm_available_idx.pop() # grab an availabe slot atomically
+    logger.debug("[{}] key {}, sm_idx {}".format(threading.current_thread().name, key, sm_idx))
+    requests.put((key, sm_idx))
+
+    slot = sm_slots[sm_idx]
+    payload = b''
+    try:
+        while slot.len.value < 0:
+            continue
+        plen = slot.len.value
+        if plen == 0:
+            logger.warn("Unsuccessful key: {}".format(key))
+            payload = b''
+        else:
+            payload = bytes(buffer(slot.payload, 0, plen)) # have to make a copy because we're releasing the slot
+    finally:
+        slot.len.value = -1
+        sm_available_idx.add(sm_idx)
+
+    if wait:
+        time.sleep(.95 * wait)
+
+    if size and len(payload) > 0:
+        return b' ' * size  # emulate decoded bytes (zeros)
+    else:
+        return payload
 
 
 def main(drive_ip, port=5567, kv_processes=2):
