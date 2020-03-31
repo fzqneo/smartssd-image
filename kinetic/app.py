@@ -126,7 +126,7 @@ def getsmart(key, size=None, wait=None):
         time.sleep(.95 * wait)
 
     if size and len(payload) > 0:
-        return b' ' * size  # emulate decoded bytes (zeros)
+        return b'\0' * size  # emulate decoded bytes (zeros)
     else:
         return payload
 

@@ -5,20 +5,24 @@ RUN apt update \
         python \
         python-pip \
         unzip \
-    && pip install -U --no-cache-dir pip \
+    && pip install -U --no-cache-dir pip setuptools \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
 RUN pip install --no-cache-dir \
-    protobuf==3.1.0 \
-    flask
+    fire \
+    flask \
+    logzero \
+    protobuf==3.1.0
 
-COPY ["Kinetic-Tools.zip", "/root/"]
+COPY [".", "/root/kinetic"]
+WORKDIR /root/kinetic
 
-WORKDIR /root
 RUN unzip Kinetic-Tools.zip \
     && (cd python-client; python setup.py develop) \
     && rm -rf Kinetic-Tools.zip python-client/.git
+
+ENTRYPOINT ["python", "app.py"]
 
 
 
