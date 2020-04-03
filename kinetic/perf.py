@@ -157,5 +157,54 @@ def app_get(dir_path, drive_ip='localhost', port=5567, ext='.jpg', shuffle=False
     print("Get {} files, {} bytes, tput {} file/s, {} MB/s".format(count, size, count / (toc-tic), size / 1e6 / (toc -tic)))
     assert count == len(key_list)
 
+
+
+def app_getchunk(drive_ip='localhost', port=5567, num_threads=4, chunksize=1000000, repeat=1000):
+    """GET dummpy chunk perf test using our web app. 
+    No kv operations.
+    Multiprocessing is used to maximize throughput.
+    
+    Arguments:
+    
+    Keyword Arguments:
+        drive_ip {str} -- [description] (default: {'localhost'})
+        port {int} -- [description] (default: {5567})
+        num_threads {int} -- [description] (default: {4})
+        chunksize {int} -- chunk size in bytes
+        repeat {int} -- how many times in each worker
+    """
+
+    stats_lock = mp.Lock()
+    stats = mp.Manager().dict({
+        'count': 0,
+        'size': 0
+    })
+ 
+    def work_fn(chunksize, repeat):
+        print("[{}, {}] Worker starts".format(mp.current_process().pid, threading.current_thread().name))
+        L = threading.local()
+        L.count = 0
+        L.size = 0
+        for _ in range(repeat):
+            r = requests.get("http://{}:{}/debug/getchunk/{}".format(drive_ip, port, chunksize))
+            L.count += 1
+            L.size += len(r.content)
+        with stats_lock:
+            stats['count'] += L.count
+            stats['size'] += L.size
+        print("[{}, {}] Worker exiting. Processed {}".format(mp.current_process().pid, threading.current_thread().name, L.count))
+
+    tic = time.time()
+    # workers = [threading.Thread(target=get_worker, args=(q,), name='worker-%d' % i) for i in range(num_threads)]
+    workers = [mp.Process(target=work_fn, args=(chunksize, repeat), name='worker-%d' % i) for i in range(num_threads)]
+    [w.start() for w in workers]
+    [w.join() for w in workers]
+
+    count, size = stats['count'], stats['size']
+    toc = time.time()
+    print("Get {} files, {} bytes, tput {} file/s, {} MB/s".format(count, size, count / (toc-tic), size / 1e6 / (toc -tic)))
+    assert count == num_threads * repeat
+    assert size == count * chunksize
+
 if __name__ == "__main__":
     fire.Fire()    

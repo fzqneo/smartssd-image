@@ -1,7 +1,8 @@
-FROM ubuntu:bionic
+FROM arm64v8/ubuntu:18.04
 
-RUN apt update \
+RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+        iproute2 \
         python \
         python-pip \
         unzip \
@@ -22,7 +23,7 @@ RUN unzip Kinetic-Tools.zip \
     && (cd python-client; python setup.py develop) \
     && rm -rf Kinetic-Tools.zip python-client/.git
 
-ENTRYPOINT ["python", "app.py"]
+CMD ["python", "app.py", "localhost"]
 
 
 

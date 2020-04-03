@@ -131,6 +131,24 @@ def getsmart(key, size=None, wait=None):
         return payload
 
 
+@app.route('/debug/getchunk/<int:size>')
+def debug_getchunk(size):
+    return b'\0' * size
+
+@app.route('/debug/getchunkgen/<int:size>')
+def debug_getchunkgen(size):
+    def generate(size):
+        chunk4k = b'\0' * 4096
+        while size > 0:
+            if size >= 4096:
+                yield chunk4k
+                size -= 4096
+            else:
+                yield '\0' * size
+                break
+    return flask.Response(generate(size))
+
+
 def main(drive_ip, port=5567, kv_processes=2):
 
     if USE_MP:
