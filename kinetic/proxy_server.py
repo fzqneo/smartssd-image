@@ -12,23 +12,23 @@ from kv_client import Client, kinetic_pb2
 StatusCodes = kinetic_pb2.Command.Status.StatusCode
 MsgTypes = kinetic_pb2.Command.MessageType
 
-def handle_get(address, body, kvclient, q):
 
+def handle_get(address, body, kvclient, q):
     key = body
 
-    def wrapper(msg, cmd, value):
+    def data_callbak(msg, cmd, value):
         if cmd.status.code != kinetic_pb2.Command.Status.SUCCESS:
-            logger.error("\t\tkey:" + key +
+            logger.error("\t Key: " +  str(cmd.body.keyValue.key) + \
                         ", BC: received ackSeq: "+str(cmd.header.ackSequence)+\
                         ", msgType: "+str(MsgTypes.Name(cmd.header.messageType))+\
                         ", statusCode: "+str(StatusCodes.Name(cmd.status.code)))
             value = b''
         else:
-            logger.debug("[get] Success: GET key={}".format(key))
+            logger.debug("[get] Success: GET " + str(cmd.body.keyValue.key))
         
-        q.put((address, value))
+        q.put((address, value)) # FIXME address
 
-    kvclient.callback_delegate = wrapper
+    kvclient.callback_delegate = data_callbak
     kvclient.get(key)
 
 
@@ -48,17 +48,18 @@ def main(drive_ip, port=5567):
     kvclient.queue_depth = 16
 
     q = Queue.Queue()
-    
+
     while True:
         #  Wait for next request from client
-        events = dict(poller.poll(0))
-        if router in events:
+        events = poller.poll(0)
+        if events:
             address, _, body = router.recv_multipart()
             logger.debug("Recv request from " + address)
-            # enque kv request and add call back
+            # parse and handle request
             handle_get(address, body, kvclient, q)
 
         try:
+            # send available response
             address, body = q.get_nowait()
             router.send_multipart([address, b'', body])
             logger.debug("Replying " + address)

@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 from collections import deque
 import fire
 import functools
+from logzero import logger
 import multiprocessing as mp
 from pathlib import *
 import random
@@ -102,7 +103,8 @@ def _proxy_get_fn(drive_ip, key_list):
     pclient.connect()
     count = 0
     size = 0
-    for res in itertools.imap(pclient.get, key_list):
+    print("Working on {} keys".format(len(key_list)))
+    for res in itertools.imap(pclient.get, tqdm(key_list)):
         count += 1
         size += len(res)
     pclient.close()
