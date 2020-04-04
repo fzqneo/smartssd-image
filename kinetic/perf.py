@@ -2,6 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 from collections import deque
 import fire
+import functools
 import multiprocessing as mp
 from pathlib import *
 import random
@@ -93,6 +94,42 @@ def gets(dir_path, drive_ip, ext='.jpg', shuffle=False, queue_depth=16):
         client.close()
 
 
+
+def _proxy_get_fn(drive_ip, key_list):
+    import proxy_client
+    import itertools
+    pclient = proxy_client.KineticProxyClient(drive_ip)
+    pclient.connect()
+    count = 0
+    size = 0
+    for res in itertools.imap(pclient.get, key_list):
+        count += 1
+        size += len(res)
+    pclient.close()
+    return (count, size)
+
+def proxy_get(dir_path, drive_ip="localhost", num_threads=4, shuffle=False, ext=".jpg"):
+    d = Path(dir_path)
+    assert d.is_dir()
+
+    key_list = [p.name for p in filter(lambda x: x.suffix == ext, tqdm(d.rglob('*')))]
+    random.shuffle(key_list) if shuffle else key_list.sort()
+    print("{} files. shuffle: {}".format(len(key_list), shuffle))
+    print("\t\n".join(key_list[:5]))
+
+    tic = time.time()
+    pool = mp.Pool(num_threads)
+    sublists = [list(key_list[i::num_threads]) for i in range(num_threads)]
+    stats = pool.map(functools.partial(_proxy_get_fn, drive_ip), sublists)
+    pool.close()
+    toc = time.time()
+
+    count, size = [sum(x) for x in zip(*stats)]        
+    print("Get {} files, {} bytes, tput {} file/s, {} MB/s".format(
+        count, size, count / (toc-tic), size / 1e6 / (toc -tic)))
+    assert count == len(key_list)
+
+
 def app_get(dir_path, drive_ip='localhost', port=5567, ext='.jpg', shuffle=False, num_threads=4):
     """GET perf test using our web app. Multiprocessing is used to maximize throughput.
     
@@ -156,7 +193,6 @@ def app_get(dir_path, drive_ip='localhost', port=5567, ext='.jpg', shuffle=False
     toc = time.time()
     print("Get {} files, {} bytes, tput {} file/s, {} MB/s".format(count, size, count / (toc-tic), size / 1e6 / (toc -tic)))
     assert count == len(key_list)
-
 
 
 def app_getchunk(drive_ip='localhost', port=5567, num_threads=4, chunksize=1000000, repeat=1000):
