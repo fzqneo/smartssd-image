@@ -104,9 +104,11 @@ def _proxy_get_fn(drive_ip, key_list):
     count = 0
     size = 0
     print("Working on {} keys".format(len(key_list)))
-    for res in itertools.imap(pclient.get, tqdm(key_list)):
+    for res in itertools.imap(pclient.get, key_list):
         count += 1
         size += len(res)
+        if count % 100 == 0:
+            print("[{}] worked {} keys".format(mp.current_process().pid, count))
     pclient.close()
     return (count, size)
 

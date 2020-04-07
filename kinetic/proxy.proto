@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+message Message {
+    enum Opcode {
+        NONE = 0;
+        PING = 1;
+        GET = 2;
+        GETSMART = 3;
+    }
+
+    Opcode opcode = 1;
+    bytes key = 2;
+    bytes value = 3;
+    fixed64 size = 4;
+    double time = 5;
+}
+
+// protoc -I ${PWD} --python_out=${PWD} ${PWD}/proxy.proto 

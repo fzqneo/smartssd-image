@@ -32,7 +32,7 @@ RUN pip install --no-cache-dir \
     fire \
     flask \
     logzero \
-    protobuf==3.1.0 \
+    protobuf==3.8.0 \
     /root/pyzmq*.whl
 
 COPY [".", "/root/kinetic"]

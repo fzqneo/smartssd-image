@@ -1,6 +1,9 @@
 from logzero import logger
 import zmq
 
+# local
+from proxy_pb2 import Message
+
 class KineticProxyClient(object):
     def __init__(self, host='localhost', port=5567):
         super(KineticProxyClient, self).__init__()
@@ -20,8 +23,21 @@ class KineticProxyClient(object):
         self._sock.close()
 
     def get(self, key):
-        self._send(key)
-        return self._recv()
+        req_msg = Message()
+        req_msg.opcode = Message.Opcode.GET
+        req_msg.key = key
+
+        self._send_msg(req_msg)
+        resp_msg = self._recv_msg(Message)
+        return resp_msg.value
+
+    def _send_msg(self, msg):
+        self._send(msg.SerializeToString())
+
+    def _recv_msg(self, msg_cls):
+        msg = msg_cls()
+        msg.ParseFromString(self._recv())
+        return msg
 
     def _send(self, body):
         return self._sock.send(body)
