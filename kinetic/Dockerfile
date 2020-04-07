@@ -38,10 +38,7 @@ RUN pip install --no-cache-dir \
 COPY [".", "/root/kinetic"]
 WORKDIR /root/kinetic
 
-RUN unzip Kinetic-Tools.zip \
-    && (cd python-client; python setup.py develop) \
-    && rm -rf Kinetic-Tools.zip python-client/.git
-
+RUN (cd python-client; python setup.py develop && python setup.py clean)
 CMD ["python", "proxy_server.py", "localhost"]
 
 

@@ -100,7 +100,7 @@ def main(drive_ip, port=5567, verbose=False):
                 raise NotImplementedError
 
         # send response
-        try:
+        if ready_requests:
             key, (address, req_msg, value) = ready_requests.popitem()
             resp_msg = Message()
             resp_msg.key = key
@@ -116,8 +116,6 @@ def main(drive_ip, port=5567, verbose=False):
             # logger.debug("Replying to {}: {}".format(address, MessageToJson(resp_msg)))
             router.send_multipart([address, b'', resp_msg.SerializeToString()])
 
-        except KeyError:
-            pass 
 
 
 if __name__ == "__main__":

@@ -1,0 +1,7 @@
+[Key Generator]
+Type : Fixed
+
+[Key Specifier]
+key_size : 100
+random_percentage : 1.0
+use_retired_random : True

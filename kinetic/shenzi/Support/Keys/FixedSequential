@@ -1,0 +1,6 @@
+[Key Generator]
+Type : Fixed
+
+[Key Specifier]
+key_size : 32
+random_percentage : 0.0
