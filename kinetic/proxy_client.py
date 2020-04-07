@@ -31,6 +31,14 @@ class KineticProxyClient(object):
         resp_msg = self._recv_msg(Message)
         return resp_msg.value
 
+    def get_smart(self, key, size):
+        req_msg = Message()
+        req_msg.opcode = Message.Opcode.GETSMART
+        req_msg.key = key
+        req_msg.size = size
+        self._send_msg(req_msg)
+        return self._recv_msg(Message).value
+
     def _send_msg(self, msg):
         self._send(msg.SerializeToString())
 

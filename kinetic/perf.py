@@ -96,7 +96,7 @@ def gets(dir_path, drive_ip, ext='.jpg', shuffle=False, queue_depth=16):
 
 
 
-def _proxy_get_fn(drive_ip, key_list):
+def _proxy_get_fn(drive_ip, getsize, key_list):
     import proxy_client
     import itertools
     pclient = proxy_client.KineticProxyClient(drive_ip)
@@ -104,7 +104,12 @@ def _proxy_get_fn(drive_ip, key_list):
     count = 0
     size = 0
     print("Working on {} keys".format(len(key_list)))
-    for res in itertools.imap(pclient.get, key_list):
+    if getsize is None:
+        map_fn = pclient.get
+    else:
+        map_fn = functools.partial(pclient.get_smart, size=getsize)
+
+    for res in itertools.imap(map_fn, key_list):
         count += 1
         size += len(res)
         if count % 100 == 0:
@@ -112,7 +117,7 @@ def _proxy_get_fn(drive_ip, key_list):
     pclient.close()
     return (count, size)
 
-def proxy_get(dir_path, drive_ip="localhost", num_threads=4, shuffle=False, ext=".jpg"):
+def proxy_get(dir_path, drive_ip="localhost", num_threads=4, getsize=None, shuffle=False, ext=".jpg"):
     d = Path(dir_path)
     assert d.is_dir()
 
@@ -124,7 +129,7 @@ def proxy_get(dir_path, drive_ip="localhost", num_threads=4, shuffle=False, ext=
     tic = time.time()
     pool = mp.Pool(num_threads)
     sublists = [list(key_list[i::num_threads]) for i in range(num_threads)]
-    stats = pool.map(functools.partial(_proxy_get_fn, drive_ip), sublists)
+    stats = pool.map(functools.partial(_proxy_get_fn, drive_ip, getsize), sublists)
     pool.close()
     toc = time.time()
 

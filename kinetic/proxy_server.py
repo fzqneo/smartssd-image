@@ -16,7 +16,6 @@ MsgTypes = kinetic_pb2.Command.MessageType
 # local
 from proxy_pb2 import Message
 
-
 # def handle_get(address, req_msg, kvclient, q):
 #     key = req_msg.key
 
@@ -92,13 +91,10 @@ def main(drive_ip, port=5567, verbose=False):
                 resp_msg.value = b'PONG'
                 router.send_multipart([address, b'', resp_msg.SerializeToString()])
 
-            elif proxy_msg.opcode == Message.Opcode.GET:
+            elif proxy_msg.opcode in (Message.Opcode.GET, Message.Opcode.GETSMART):
                 key = proxy_msg.key
                 pending_requests[key] = [address, proxy_msg, None]
                 kvclient.get(key)
-
-            elif proxy_msg.opcode == Message.Opcode.GETSMART:
-                raise NotImplementedError
 
             else:
                 raise NotImplementedError
