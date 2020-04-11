@@ -1,8 +1,10 @@
+from __future__ import absolute_import, division, print_function
+
 from logzero import logger
 import zmq
 
 # local
-from proxy_pb2 import Message
+from s3dexp.kinetic.proxy_pb2 import Message
 
 class KineticProxyClient(object):
     def __init__(self, host='localhost', port=5567):

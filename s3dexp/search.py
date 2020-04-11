@@ -1,9 +1,12 @@
 import collections
-from logzero import logger
 import multiprocessing as mp
-import numpy as np
-import time
 import os
+import time
+
+from logzero import logger
+import numpy as np
+from tqdm import tqdm
+
 
 class Item(object):
     def __init__(self, src):
@@ -91,12 +94,13 @@ def search_work(filter_configs, context):
     assert isinstance(context, Context)
     logger.info("[Worker {}] started".format(os.getpid()))
     filters = map(lambda fc: fc.instantiate(), filter_configs)
-    map(logger.info, map(str, filters))
+    map(logger.debug, map(str, filters))
 
     tic_cpu = time.clock()
     count = 0
     count_passed = 0
 
+    # allow different filters to update some global stats
     session_stats = collections.defaultdict(float)
     for f in filters:
         f.set_session_stats(session_stats)
@@ -146,9 +150,7 @@ def run_search(filter_configs, num_workers, path_list_or_gen, context):
         w.start()
         workers.append(w)
 
-    for i, path in enumerate(path_list_or_gen):
-        if i % 1000 == 0:
-            logger.info("Enque'd {} items".format(i))
+    for i, path in enumerate(tqdm(path_list_or_gen)):
         logger.debug("Enque'ing {}".format(path))
         context.q.put(path)
     # push None as sentinel

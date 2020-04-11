@@ -1,9 +1,9 @@
 
-docker:
-	nvidia-docker build -t smartssd .
+# docker:
+# 	nvidia-docker build -t smartssd .
 
-install:
-	python setup.py install && rm -rf build dist s3dexp.egg-info .eggs
+# install:
+# 	python setup.py install && rm -rf build dist s3dexp.egg-info .eggs
 	
 db-up:
 	docker-compose up -d
@@ -42,7 +42,6 @@ ramfs-sync:
 
 ramfs-down:
 	sudo umount /mnt/ramfs
-
 
 video-ramfs-up:
 	@(if [ ! -z "$(shell mount | grep /mnt/ramfs )" ]; then \
