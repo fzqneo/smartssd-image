@@ -1,0 +1,8 @@
+expname: kinetic_read
+
+filters:
+  -
+    filter: SimpleKineticGetFilter
+    kwargs:
+      drive_ip: "172.15.0.169"
+    

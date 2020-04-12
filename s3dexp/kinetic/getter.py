@@ -10,10 +10,11 @@ StatusCodes = kinetic_pb2.Command.Status.StatusCode
 MsgTypes = kinetic_pb2.Command.MessageType
 
 from s3dexp.search import Filter
+from s3dexp.kinetic.proxy_client import KineticProxyClient
 
 class SimpleKineticGetFilter(Filter):
     def __init__(self, drive_ip):
-        super().__init__()
+        super(SimpleKineticGetFilter, self).__init__()
         kvclient = Client(drive_ip)
         kvclient .connect()
         assert kvclient.is_connected, "Failed to connect to drive"
@@ -41,7 +42,26 @@ class SimpleKineticGetFilter(Filter):
         key = pathlib.Path(item.src).name
         self.kvclient.get(key)
         self.kvclient.wait_q(0)
-        return self.result.pop()
+        value = self.result.pop()
+        self.session_stats['bytes_from_disk'] += len(value)
+        item.data = value
+        return True
+
+
+class ProxyKineticGetFilter(Filter):
+    def __init__(self, drive_ip):
+        super(ProxyKineticGetFilter, self).__init__()
+        pxclient = KineticProxyClient(drive_ip)
+        pxclient.connect()
+        # logger.info("Connected to Kinetic proxy at {}".format(drive_ip))
+        self.pxclient = pxclient
+
+    def __call__(self, item):
+        key = pathlib.Path(item.src).name
+        value = self.pxclient.get(key)
+        self.session_stats['bytes_from_disk'] += len(value)
+        item.data = value
+        return True
 
 
 

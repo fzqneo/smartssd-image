@@ -1,0 +1,8 @@
+expname: kproxy_read
+
+filters:
+  -
+    filter: ProxyKineticGetFilter
+    kwargs:
+      drive_ip: "172.15.0.169"
+    

@@ -36,7 +36,8 @@ CPU_START = (0, 6)    # pin on NUMA node 0
 
 def run(
     search_file, base_dir, ext='.jpg', num_workers=8, 
-    store_result=False, expname=None, sort_fie=False, verbose=False):
+    store_result=False, expname=None, sort=None, 
+    verbose=False):
     """Run a search consisting of a filter chain defined in an input 'search file'
     
     Arguments:
@@ -48,7 +49,7 @@ def run(
         num_workers {int} -- number of parallel workers (default: {8})
         store_result {bool} -- whether store measurements to DB (default: {False})
         expname {[type]} -- expname in DB. If not provided, will try to use from search_file (default: {None})
-        sort_fie {bool} -- sort the file order according to Linux File extent (default: {False})
+        sort {str or None} -- sort the paths by 'fie' (Linux FIE), 'name' (file name), or None (random)
         verbose {bool} -- [description] (default: {False})
     """
 
@@ -80,12 +81,17 @@ def run(
         fc = FilterConfig(filter_cls, args=el.get('args', []), kwargs=el.get('kwargs', {}))
         filter_configs.append(fc)
 
-    # prepare paths
+    # prepare and sort paths
+    assert sort in (None, 'fie', 'name')
     base_dir = str(pathlib.Path(base_dir).resolve())
     paths = list(filter(lambda p: p.suffix == ext, pathlib.Path(base_dir).rglob('*')))
     paths = list(map(str, paths))
-    if sort_fie:
+    if sort == 'fie':
+        logger.info("Sort paths by FIE")
         paths = sorted(paths, key=get_fie_physical_start)
+    elif sort == 'name':
+        logger.info("Sort paths by name")
+        paths = sorted(paths, key=lambda p: pathlib.Path(p).name)
     else:
         # deterministic pseudo-random
         random.seed(42)
@@ -96,6 +102,7 @@ def run(
     manager = mp.Manager()
     context = Context(manager)
 
+    # run the search with parallel workers
     tic = time.time()
     run_search(filter_configs, num_workers, paths, context)
     elapsed = time.time() - tic
@@ -113,6 +120,7 @@ def run(
 
     logger.info(json.dumps(keys_dict))
     logger.info(json.dumps(vals_dict))
+    logger.info("obj tput: {}".format(1000 // vals_dict['avg_wall_ms']))
 
     if store_result:
         logger.warn("Writing result to DB expname={}".format(expname))
