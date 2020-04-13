@@ -2,9 +2,7 @@ expname: kproxy_decode
 
 filters:
   -
-    filter: ProxyKineticGetFilter
+    filter: ProxyKineticGetDecodeFilter
     kwargs:
       drive_ip: "172.15.0.169"
-  -
-    filter: DecodeFilter
     

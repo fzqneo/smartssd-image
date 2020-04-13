@@ -26,7 +26,7 @@ from s3dexp.filter.object_detection import ObjectDetectionFilter
 from s3dexp.filter.reader import SimpleReadFilter
 from s3dexp.filter.rgbhist import RGBHist1dFilter, RGBHist2dFilter, RGBHist3dFilter
 from s3dexp.filter.smart_storage import SmartDecodeFilter, SmartFaceFilter
-from s3dexp.kinetic.getter import *
+from s3dexp.kinetic.filter import *
 from s3dexp.search import Context, FilterConfig, run_search
 from s3dexp.utils import recursive_glob, get_fie_physical_start
 
@@ -94,6 +94,7 @@ def run(
         paths = sorted(paths, key=lambda p: pathlib.Path(p).name)
     else:
         # deterministic pseudo-random
+        logger.info("Shuffle paths")
         random.seed(42)
         random.shuffle(paths)
     logger.info("Find {} files under {}".format(len(paths), base_dir))

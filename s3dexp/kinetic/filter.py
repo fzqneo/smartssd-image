@@ -1,8 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
-from logzero import logger
 import os
-import pathlib
+import time
+
+import cv2
+from logzero import logger
+import pathlib2 as pathlib
 
 # seagate
 from kv_client import Client, kinetic_pb2
@@ -64,5 +67,32 @@ class ProxyKineticGetFilter(Filter):
         return True
 
 
+class ProxyKineticGetDecodeFilter(Filter):
+    def __init__(self, drive_ip, base_dir='/home/zf/activedisk/data/flickr15k/', ppm_dir='/mnt/ramfs/ppm/', mpixps=140.):
+        super(ProxyKineticGetDecodeFilter, self).__init__()
+        self.base_dir = pathlib.Path(base_dir).resolve()
+        self.ppm_dir = pathlib.Path(ppm_dir).resolve()
+        self.mpixps = mpixps
+        pxclient = KineticProxyClient(drive_ip)
+        pxclient.connect()
+        self.pxclient = pxclient
 
-    
+
+    def __call__(self, item):
+        # load ppm and emulate decode time
+        tic = time.time()
+        abspath = pathlib.Path(item.src).resolve()
+        ppm_path = (self.ppm_dir / abspath.relative_to(self.base_dir.parent)).with_suffix('.ppm') # include the dataset name
+        logger.debug("Loading PPM from {}".format(ppm_path))
+        arr = cv2.imread(str(ppm_path), cv2.IMREAD_COLOR)
+        item.array = arr
+        simulated_deocde_time = arr.shape[0] * arr.shape[1] / 1e6 / self.mpixps
+        sleep = simulated_deocde_time - (time.time() - tic)
+        # if sleep > 0:
+            # time.sleep(.9 * sleep)
+
+        # issue get with emulated decode
+        key = abspath.name
+        _ = self.pxclient.get_smart(key, arr.size)
+        self.session_stats['bytes_from_disk'] += arr.size
+        return True
