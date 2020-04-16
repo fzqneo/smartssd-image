@@ -1,0 +1,12 @@
+expname: kproxy_redness
+
+filters:
+  -
+    filter: ProxyKineticGetDecodeFilter
+    kwargs:
+      drive_ips: ["172.15.0.168", "172.15.0.173"]
+  -
+    filter: ColorFilter
+    kwargs:
+      bgr_lb: [0, 0, 180]
+      pixels_threshold: 5000

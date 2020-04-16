@@ -35,7 +35,7 @@ logzero.loglevel(logging.INFO)
 CPU_START = (0, 6)    # pin on NUMA node 0
 
 def run(
-    search_file, base_dir, ext='.jpg', num_workers=8, 
+    search_file, base_dir, ext='.jpg', num_cores=8, workers_per_core=1,
     store_result=False, expname=None, sort=None, 
     verbose=False):
     """Run a search consisting of a filter chain defined in an input 'search file'
@@ -46,7 +46,8 @@ def run(
     
     Keyword Arguments:
         ext {str} -- file extension filter (default: {'jpg'})
-        num_workers {int} -- number of parallel workers (default: {8})
+        num_cores {int} -- number of logical cores (default: {8})
+        workers_per_core {int} -- number of workers per logical core (default: {1})
         store_result {bool} -- whether store measurements to DB (default: {False})
         expname {[type]} -- expname in DB. If not provided, will try to use from search_file (default: {None})
         sort {str or None} -- sort the paths by 'fie' (Linux FIE), 'name' (file name), or None (random)
@@ -60,9 +61,9 @@ def run(
         search_conf = yaml.load(f, Loader=yaml.FullLoader)
 
     # prepare CPU affinity
-    assert num_workers ==1 or num_workers % 2 == 0, "Must give an even number for num_workers or 1: {}".format(num_workers)
-    if num_workers > 1:
-        cpuset = range(CPU_START[0], int(CPU_START[0] + num_workers /2)) + range(CPU_START[1], int(CPU_START[1] + num_workers / 2))
+    assert num_cores ==1 or num_cores % 2 == 0, "Must give an even number for num_cores or 1: {}".format(num_cores)
+    if num_cores > 1:
+        cpuset = range(CPU_START[0], int(CPU_START[0] + num_cores /2)) + range(CPU_START[1], int(CPU_START[1] + num_cores / 2))
     else:
         cpuset = [CPU_START[0], ]
     logger.info("cpuset: {}".format(cpuset))
@@ -105,13 +106,13 @@ def run(
 
     # run the search with parallel workers
     tic = time.time()
-    run_search(filter_configs, num_workers, paths, context)
+    run_search(filter_configs, num_cores * workers_per_core, paths, context)
     elapsed = time.time() - tic
 
     logger.info("End-to-end elapsed time {:.3f} s".format(elapsed))
     logger.info(str(context.stats))
 
-    keys_dict={'expname': expname, 'basedir': base_dir, 'ext': ext, 'num_workers': num_workers, 'hostname': this_hostname}
+    keys_dict={'expname': expname, 'basedir': base_dir, 'ext': ext, 'num_workers': num_cores, 'hostname': this_hostname}
     vals_dict={
                     'num_items': context.stats['num_items'],
                     'avg_wall_ms': 1e3 * elapsed / context.stats['num_items'],

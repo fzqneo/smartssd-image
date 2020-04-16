@@ -37,7 +37,7 @@ def ingest(dir_path, drive_ip, ext='.jpg'):
         count = 0
         size = 0
 
-        for i, p in enumerate(filter(lambda x: x.suffix == ext, tqdm(d.rglob('*')))):
+        for i, p in enumerate(tqdm(filter(lambda x: x.suffix == ext, d.rglob('*')))):
             key = p.name
             with p.open('rb') as f:
                 payload = f.read()
@@ -46,7 +46,7 @@ def ingest(dir_path, drive_ip, ext='.jpg'):
                 large_files.append(str(p))
                 continue
             # print(i, "ingesting k={}, val=({}), {}".format(key, len(payload), p))
-            client.put(key, payload, force=True, synchronization=2) # 1 - writethrough, 2 - writeback
+            client.put(key, payload, force=True, synchronization=1) # 1 - writethrough, 2 - writeback
             count += 1
             size += len(payload)
 

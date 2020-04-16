@@ -1,0 +1,14 @@
+expname: kinetic_redness
+
+filters:
+  -
+    filter: SimpleKineticGetFilter
+    kwargs:
+      drive_ips: ["172.15.0.168", "172.15.0.173"]
+  -
+    filter: DecodeFilter
+  -
+    filter: ColorFilter
+    kwargs:
+      bgr_lb: [0, 0, 180]
+      pixels_threshold: 5000
