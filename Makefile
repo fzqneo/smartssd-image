@@ -34,7 +34,7 @@ ramfs-up:
 		echo "ramfs already up: $(shell mount | grep /mnt/ramfs)" >&2; \
 	else \
 		sudo mount -t ramfs -o size=16g ramfs /mnt/ramfs && echo "Created ramfs"; \
-		sudo rsync -a --stats /home/zf/activedisk/data/ppm /mnt/ramfs/; \
+		sudo rsync -a --stats /home/zf/activedisk/data/npy/ /mnt/ramfs/; \
 	fi)
 
 ramfs-sync:

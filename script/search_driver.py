@@ -32,7 +32,7 @@ from s3dexp.utils import recursive_glob, get_fie_physical_start
 
 logzero.loglevel(logging.INFO)
 
-CPU_START = (0, 6)    # pin on NUMA node 0
+CPU_START = (0, 36)    # pin on NUMA node 0
 
 def run(
     search_file, base_dir, ext='.jpg', num_cores=8, workers_per_core=1,

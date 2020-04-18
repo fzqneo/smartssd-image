@@ -16,11 +16,17 @@ MsgTypes = kinetic_pb2.Command.MessageType
 from s3dexp.search import Filter
 from s3dexp.kinetic.proxy_client import KineticProxyClient
 
-
+def get_drives_envvar():
+    rv = os.getenv('KINETIC_DRIVES').split(' ')
+    logger.info("Obtain drives from env var: {}".format(rv))
+    return rv
 
 class SimpleKineticGetFilter(Filter):
-    def __init__(self, drive_ips):
+    def __init__(self, drive_ips=None):
         super(SimpleKineticGetFilter, self).__init__()
+
+        if not drive_ips:
+            drive_ips = get_drives_envvar()
 
         self.result = []
         def data_callbak(msg, cmd, value):
@@ -60,28 +66,16 @@ class SimpleKineticGetFilter(Filter):
         item.data = value
         return True
 
-
-# class ProxyKineticGetFilter(Filter):
-#     def __init__(self, drive_ip):
-#         super(ProxyKineticGetFilter, self).__init__()
-#         pxclient = KineticProxyClient(drive_ip)
-#         pxclient.connect()
-#         # logger.info("Connected to Kinetic proxy at {}".format(drive_ip))
-#         self.pxclient = pxclient
-
-#     def __call__(self, item):
-#         key = pathlib.Path(item.src).name
-#         value = self.pxclient.get(key)
-#         self.session_stats['bytes_from_disk'] += len(value)
-#         item.data = value
-#         return True
-
-
+import numpy as np
 class ProxyKineticGetDecodeFilter(Filter):
-    def __init__(self, drive_ips, base_dir='/home/zf/activedisk/data/flickr15k/', ppm_dir='/mnt/ramfs/ppm/', mpixps=140., em_wait=False):
+    def __init__(self, drive_ips=None, base_dir='/home/zf/activedisk/data/flickr15k/', decoded_dir='/mnt/ramfs/', mpixps=140., em_wait=False):
         super(ProxyKineticGetDecodeFilter, self).__init__()
+
+        if not drive_ips:
+            drive_ips = get_drives_envvar()
+
         self.base_dir = pathlib.Path(base_dir).resolve()
-        self.ppm_dir = pathlib.Path(ppm_dir).resolve()
+        self.decoded_dir = pathlib.Path(decoded_dir).resolve()
         self.mpixps = mpixps
         self.em_wait = em_wait
 
@@ -97,18 +91,26 @@ class ProxyKineticGetDecodeFilter(Filter):
         # load ppm and emulate decode time
         tic = time.time()
         abspath = pathlib.Path(item.src).resolve()
-        ppm_path = (self.ppm_dir / abspath.relative_to(self.base_dir.parent)).with_suffix('.ppm') # include the dataset name
-        logger.debug("Loading PPM from {}".format(ppm_path))
-        arr = cv2.imread(str(ppm_path), cv2.IMREAD_COLOR)
+
+        # .npy files are somewhat faster than .ppm
+        npy_path = (self.ppm_dir / abspath.relative_to(self.base_dir.parent)).with_suffix('.npy')
+        arr = np.load(npy_path)
+        logger.debug("Loading decoded file from {}".format(npy_path))
+
+        # ppm_path = (self.ppm_dir / abspath.relative_to(self.base_dir.parent)).with_suffix('.ppm') # include the dataset name
+        # logger.debug("Loading PPM from {}".format(ppm_path))
+        # arr = cv2.imread(str(ppm_path), cv2.IMREAD_COLOR)
+
         item.array = arr
         simulated_deocde_time = arr.shape[0] * arr.shape[1] / 1e6 / self.mpixps
 
         if self.em_wait:
             sleep = simulated_deocde_time - (time.time() - tic)
-            if sleep > 0:
+            if sleep > 1e-3:
                 time.sleep(.9 * sleep)
             elif sleep < -1e-3:
-                logger.warn("Too late to emulate decode: {:.4f}, {}, {}x{}".format(sleep, ppm_path, arr.shape[0], arr.shape[1]))
+                # logger.warn("Too late to emulate decode: {:.4f}, {}, {}x{}".format(sleep, ppm_path, arr.shape[0], arr.shape[1]))
+                pass
 
         # issue get_smart with emulated decode to proxy
         pxclient = random.choice(self.pxclients)
@@ -116,3 +118,20 @@ class ProxyKineticGetDecodeFilter(Filter):
         _ = pxclient.get_smart(key, arr.size)
         self.session_stats['bytes_from_disk'] += arr.size
         return True
+
+
+
+# class ProxyKineticGetFilter(Filter):
+#     def __init__(self, drive_ip):
+#         super(ProxyKineticGetFilter, self).__init__()
+#         pxclient = KineticProxyClient(drive_ip)
+#         pxclient.connect()
+#         # logger.info("Connected to Kinetic proxy at {}".format(drive_ip))
+#         self.pxclient = pxclient
+
+#     def __call__(self, item):
+#         key = pathlib.Path(item.src).name
+#         value = self.pxclient.get(key)
+#         self.session_stats['bytes_from_disk'] += len(value)
+#         item.data = value
+#         return True

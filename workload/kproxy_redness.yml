@@ -3,8 +3,8 @@ expname: kproxy_redness
 filters:
   -
     filter: ProxyKineticGetDecodeFilter
-    kwargs:
-      drive_ips: ["172.15.0.168", "172.15.0.173"]
+    # kwargs:
+    #   drive_ips: ["172.15.0.168", "172.15.0.173"]
   -
     filter: ColorFilter
     kwargs:

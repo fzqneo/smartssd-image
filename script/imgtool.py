@@ -2,37 +2,32 @@ import os
 import random
 import shutil
 
+import cv2
 import fire
 from logzero import logger
+import numpy as np 
 import pathlib2 as pathlib
-import PIL.Image as Image
+# import PIL.Image as Image
 from tqdm import tqdm
 
 from s3dexp.utils import recursive_glob
 
-def convert_format(src_dir, dest_dir, to_ext='ppm', from_ext="jpg"):
-    assert os.path.isdir(src_dir)
-    assert to_ext in ('jpg', 'png', 'ppm')
-    for i, path in enumerate(tqdm(recursive_glob(base_dir=src_dir, pattern="*."+from_ext))):
-        # mapped directory
-        dest_path = os.path.join(
-            dest_dir,
-            os.path.relpath(path, src_dir)
-        )
-        # map extension
-        dest_path = os.path.splitext(dest_path)[0] + ".{}".format(to_ext)
+def convert_format(src_dir, dest_dir, to_ext='.ppm', from_ext=".jpg"):
+    assert to_ext in ('.jpg', '.png', '.ppm', '.npy')
 
-        logger.debug("[{}] Converting {} to {}".format(i, path, dest_path))
-        assert not os.path.exists(dest_path), "Converted file alreay exists!"
+    src_dir = pathlib.Path(src_dir).resolve()
+    dest_dir = pathlib.Path(dest_dir)   # may not exist
 
-        # create intermediate directory
-        if not os.path.exists(os.path.dirname(dest_path)):
-            os.makedirs(os.path.dirname(dest_path))
+    for ipath in filter(lambda p: p.suffix==from_ext, tqdm(src_dir.rglob('*'))):
+        opath = (dest_dir / ipath.relative_to(src_dir)).with_suffix(to_ext)
+        opath.parent.mkdir(parents=True, exist_ok=True)
 
         # convert and save
-        im = Image.open(path)
-        im.save(dest_path)
-
+        arr = cv2.imread(str(ipath), cv2.IMREAD_COLOR)
+        if to_ext == '.npy':
+            np.save(opath, arr)
+        else:
+            cv2.imwrite(opath, arr)
 
 def sample_dir(src_dir, dest_dir, num, ext='.jpg', ):
     """Sampling `num` files from src_dir and save them to dest_dir.
