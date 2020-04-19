@@ -67,6 +67,8 @@ class SimpleKineticGetFilter(Filter):
         return True
 
 import numpy as np
+from s3dexp.kinetic.proxy_pb2 import Message
+
 class ProxyKineticGetDecodeFilter(Filter):
     def __init__(self, drive_ips=None, base_dir='/home/zf/activedisk/data/flickr15k/', decoded_dir='/mnt/ramfs/', mpixps=140., em_wait=False):
         super(ProxyKineticGetDecodeFilter, self).__init__()
@@ -93,13 +95,10 @@ class ProxyKineticGetDecodeFilter(Filter):
         abspath = pathlib.Path(item.src).resolve()
 
         # .npy files are somewhat faster than .ppm
-        npy_path = (self.ppm_dir / abspath.relative_to(self.base_dir.parent)).with_suffix('.npy')
+        npy_path = (self.decoded_dir / abspath.relative_to(self.base_dir.parent)).with_suffix('.npy')
         arr = np.load(npy_path)
         logger.debug("Loading decoded file from {}".format(npy_path))
 
-        # ppm_path = (self.ppm_dir / abspath.relative_to(self.base_dir.parent)).with_suffix('.ppm') # include the dataset name
-        # logger.debug("Loading PPM from {}".format(ppm_path))
-        # arr = cv2.imread(str(ppm_path), cv2.IMREAD_COLOR)
 
         item.array = arr
         simulated_deocde_time = arr.shape[0] * arr.shape[1] / 1e6 / self.mpixps
@@ -115,7 +114,16 @@ class ProxyKineticGetDecodeFilter(Filter):
         # issue get_smart with emulated decode to proxy
         pxclient = random.choice(self.pxclients)
         key = abspath.name
-        _ = pxclient.get_smart(key, arr.size)
+        
+        # hack for speed: send request and get reply separately. Don't parse reply
+        req_msg = pxclient.request_msg
+        # req_msg.Clear()   # Clear() takes about 1ms. WTH
+        req_msg.opcode = Message.Opcode.GETSMART
+        req_msg.key = key
+        req_msg.size = arr.size
+        pxclient._send_request_msg()
+        _ = pxclient._recv()    # recv w/o parsing
+        
         self.session_stats['bytes_from_disk'] += arr.size
         return True
 

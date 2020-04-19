@@ -12,6 +12,10 @@ class KineticProxyClient(object):
         self.host = host
         self.port = port
 
+        # reusable Message objects (not thread safe)
+        self.request_msg = Message()
+        self.reply_msg = Message()
+
     def connect(self):
         context = zmq.Context()
         req = context.socket(zmq.REQ)
@@ -25,21 +29,32 @@ class KineticProxyClient(object):
         self._sock.close()
 
     def get(self, key):
-        req_msg = Message()
+        req_msg = self.request_msg
+        req_msg.Clear()
         req_msg.opcode = Message.Opcode.GET
         req_msg.key = key
 
-        self._send_msg(req_msg)
-        resp_msg = self._recv_msg(Message)
-        return resp_msg.value
+        self._send_request_msg()
+        self._recv_reply_msg()
+
+        return self.reply_msg.value
 
     def get_smart(self, key, size):
-        req_msg = Message()
+        req_msg = self.request_msg
+        req_msg.Clear()
         req_msg.opcode = Message.Opcode.GETSMART
         req_msg.key = key
         req_msg.size = size
-        self._send_msg(req_msg)
-        return self._recv_msg(Message).value
+        self._send_request_msg()
+        self._recv_reply_msg()
+        return self.reply_msg.value
+
+    def _send_request_msg(self):
+        self._send(self.request_msg.SerializeToString())
+
+    def _recv_reply_msg(self):
+        self.reply_msg.Clear()
+        self.reply_msg.ParseFromString(self._recv())
 
     def _send_msg(self, msg):
         self._send(msg.SerializeToString())
