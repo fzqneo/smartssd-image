@@ -30,7 +30,7 @@ class KineticProxyClient(object):
 
     def get(self, key):
         req_msg = self.request_msg
-        req_msg.Clear()
+        # req_msg.Clear()
         req_msg.opcode = Message.Opcode.GET
         req_msg.key = key
 
@@ -41,13 +41,16 @@ class KineticProxyClient(object):
 
     def get_smart(self, key, size):
         req_msg = self.request_msg
-        req_msg.Clear()
+        # req_msg.Clear()
         req_msg.opcode = Message.Opcode.GETSMART
         req_msg.key = key
         req_msg.size = size
         self._send_request_msg()
-        self._recv_reply_msg()
-        return self.reply_msg.value
+
+        # self._recv_reply_msg()
+        # return self.reply_msg.value
+        # hack for speed: don't parse proto message. Assume caller doesn't need it
+        return self._recv()
 
     def _send_request_msg(self):
         self._send(self.request_msg.SerializeToString())

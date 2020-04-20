@@ -130,14 +130,7 @@ class ProxyKineticGetDecodeFilter(Filter):
         pxclient = self.pxclient
         key = abspath.name
         
-        # hack for speed: send request and get reply separately. Don't parse reply
-        req_msg = pxclient.request_msg
-        # req_msg.Clear()   # Clear() takes about 1ms. WTH
-        req_msg.opcode = Message.Opcode.GETSMART
-        req_msg.key = key
-        req_msg.size = arr.size
-        pxclient._send_request_msg()
-        _ = pxclient._recv()    # recv w/o parsing
+        pxclient.get_smart(key, arr.size)
         
         self.session_stats['bytes_from_disk'] += arr.size
         return True

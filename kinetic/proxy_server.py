@@ -102,19 +102,20 @@ def main(drive_ip, port=5567, verbose=False):
         # send response
         if ready_requests:
             key, (address, req_msg, value) = ready_requests.popitem()
-            resp_msg = Message()
-            resp_msg.key = key
-            resp_msg.opcode = req_msg.opcode
 
             if req_msg.opcode == Message.Opcode.GET:
+                resp_msg = Message()
+                resp_msg.key = key
+                resp_msg.opcode = req_msg.opcode
                 resp_msg.value = value
+                router.send_multipart([address, b'', resp_msg.SerializeToString()])
             elif req_msg.opcode == Message.Opcode.GETSMART:
-                resp_msg.value = b'\0' * req_msg.size
+                # hack for speed: assume the client won't parse proto message
+                router.send_multipart([address, b'', b'\0' * req_msg.size ])
             else:
                 raise ValueError("Other opcode should not land here: " + str(req_msg.opcode))
 
             # logger.debug("Replying to {}: {}".format(address, MessageToJson(resp_msg)))
-            router.send_multipart([address, b'', resp_msg.SerializeToString()])
 
 
 
