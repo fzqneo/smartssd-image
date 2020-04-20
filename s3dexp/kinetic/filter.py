@@ -44,20 +44,29 @@ class SimpleKineticGetFilter(Filter):
             self.result.append(bytes(value))
 
 
-        kvclients = []
-        for drive_ip in drive_ips:
-            kvclient = Client(drive_ip)
-            kvclient .connect()
-            assert kvclient.is_connected, "Failed to connect to drive"
-            logger.info("kv_client connected {}".format(drive_ip))
-            kvclient.queue_depth = 5
-            kvclient.callback_delegate = data_callbak
-            kvclients.append(kvclient)
+        # kvclients = []
+        # for drive_ip in drive_ips:
+        #     kvclient = Client(drive_ip)
+        #     kvclient.connect()
+        #     assert kvclient.is_connected, "Failed to connect to drive"
+        #     logger.info("kv_client connected {}".format(drive_ip))
+        #     kvclient.queue_depth = 5
+        #     kvclient.callback_delegate = data_callbak
+        #     kvclients.append(kvclient)
+        # self.kvclients = kvclients
+        
+        drive_ip = random.choice(drive_ips)        
+        kvclient = Client(drive_ip)
+        kvclient .connect()
+        assert kvclient.is_connected, "Failed to connect to drive"
+        logger.info("kv_client connected {}".format(drive_ip))
+        kvclient.queue_depth = 5
+        kvclient.callback_delegate = data_callbak
+        self.kvclient = kvclient
 
-        self.kvclients = kvclients
 
     def __call__(self, item):
-        kvclient = random.choice(self.kvclients)
+        kvclient = self.kvclient
         key = pathlib.Path(item.src).name
         kvclient.get(key)
         kvclient.wait_q(0)
@@ -65,6 +74,7 @@ class SimpleKineticGetFilter(Filter):
         self.session_stats['bytes_from_disk'] += len(value)
         item.data = value
         return True
+
 
 import numpy as np
 from s3dexp.kinetic.proxy_pb2 import Message
@@ -81,12 +91,17 @@ class ProxyKineticGetDecodeFilter(Filter):
         self.mpixps = mpixps
         self.em_wait = em_wait
 
-        pxclients = []
-        for drive_ip in drive_ips:
-            pxclient = KineticProxyClient(drive_ip)
-            pxclient.connect()
-            pxclients.append(pxclient)
-        self.pxclients = pxclients
+        # pxclients = []
+        # for drive_ip in drive_ips:
+        #     pxclient = KineticProxyClient(drive_ip)
+        #     pxclient.connect()
+        #     pxclients.append(pxclient)
+        # self.pxclients = pxclients
+
+        drive_ip = random.choice(drive_ips)
+        pxclient = KineticProxyClient(drive_ip)
+        pxclient.connect()
+        self.pxclient = pxclient
 
 
     def __call__(self, item):
@@ -112,7 +127,7 @@ class ProxyKineticGetDecodeFilter(Filter):
                 pass
 
         # issue get_smart with emulated decode to proxy
-        pxclient = random.choice(self.pxclients)
+        pxclient = self.pxclient
         key = abspath.name
         
         # hack for speed: send request and get reply separately. Don't parse reply
@@ -127,19 +142,3 @@ class ProxyKineticGetDecodeFilter(Filter):
         self.session_stats['bytes_from_disk'] += arr.size
         return True
 
-
-
-# class ProxyKineticGetFilter(Filter):
-#     def __init__(self, drive_ip):
-#         super(ProxyKineticGetFilter, self).__init__()
-#         pxclient = KineticProxyClient(drive_ip)
-#         pxclient.connect()
-#         # logger.info("Connected to Kinetic proxy at {}".format(drive_ip))
-#         self.pxclient = pxclient
-
-#     def __call__(self, item):
-#         key = pathlib.Path(item.src).name
-#         value = self.pxclient.get(key)
-#         self.session_stats['bytes_from_disk'] += len(value)
-#         item.data = value
-#         return True
