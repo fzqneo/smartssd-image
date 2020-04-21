@@ -26,6 +26,7 @@ import batch
 import common
 import kinetic_pb2
 
+print "zf: This module has disabled hmac calculation"
 class Client(object):
     """
     Client is the main class that is used to interface with a
@@ -214,6 +215,7 @@ class Client(object):
         Returns:
             str: The calculated HMAC
         """
+
         mac = hmac.new(self._secret, digestmod=hashlib.sha1)
         # Converting to big endian to be compatible with java implementation.
         mac.update(struct.pack(">I", len(command)))
@@ -417,7 +419,8 @@ class Client(object):
             m = kinetic_pb2.Message()
             m.authType = kinetic_pb2.Message.HMACAUTH
             m.hmacAuth.identity = self.identity
-            m.hmacAuth.hmac = self._calculate_hmac(command_bytes)
+            # zf: hack disble hmac on send
+            # m.hmacAuth.hmac = self._calculate_hmac(command_bytes)
 
         m.commandBytes = command_bytes
 
@@ -595,7 +598,7 @@ class Client(object):
         Helper method that receives data from the socket and reports either a failure or a successful status.
         """
         msg, cmd, value = self._network_recv()
-        # (zf) hack: disable HMAC validation
+        # (zf) hack: disable HMAC validation on receive
         # # Validate HMAC on HMACAUTH responses
         # if msg.authType == 1:
         #     cal_hmac = self._calculate_hmac(cmd.SerializeToString())

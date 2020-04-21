@@ -1,0 +1,11 @@
+expname: kinetic
+
+filters:
+  -
+    filter: SimpleKineticGetFilter
+  -
+    filter: DecodeFilter
+  -
+    filter: ImageHashFilter
+    
+  

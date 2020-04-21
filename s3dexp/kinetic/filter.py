@@ -80,7 +80,7 @@ import numpy as np
 from s3dexp.kinetic.proxy_pb2 import Message
 
 class ProxyKineticGetDecodeFilter(Filter):
-    def __init__(self, drive_ips=None, base_dir='/home/zf/activedisk/data/flickr15k/', decoded_dir='/mnt/ramfs/', mpixps=140., em_wait=False):
+    def __init__(self, drive_ips=None, base_dir='/home/zf/activedisk/data/flickr15k/', decoded_dir='/mnt/ramfs/', mpixps=140., em_wait=True):
         super(ProxyKineticGetDecodeFilter, self).__init__()
 
         if not drive_ips:

@@ -1,0 +1,9 @@
+expname: kproxy_hash
+
+filters:
+  -
+    filter: ProxyKineticGetDecodeFilter
+  -
+    filter: ImageHashFilter
+    
+  
