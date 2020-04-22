@@ -8,6 +8,7 @@ import math
 import multiprocessing as mp
 import numpy as np
 import os
+import pathlib2 as pathlib
 from PIL import Image
 import psutil
 import random
@@ -19,13 +20,15 @@ import torch.nn.functional as F
 from torchvision import transforms
 from torch.autograd import Variable
 import torchvision
+from tqdm import tqdm
 
 from s3dexp import this_hostname
 import s3dexp.db.utils as dbutils
 import s3dexp.db.models as dbmodles
 from s3dexp.filter.decoder import DecodeFilter
 from s3dexp.filter.reader import SimpleReadFilter
-from s3dexp.filter.smart_storage import SmartDecodeFilter, SmartFaceFilter
+from s3dexp.filter.smart_storage import *
+from s3dexp.kinetic.filter import *
 from s3dexp.search import Context, Filter, FilterConfig, run_search
 from s3dexp.sim.client import SmartStorageClient
 from s3dexp.utils import recursive_glob, get_fie_physical_start
@@ -182,34 +185,49 @@ class TransformAndSendFilter(Filter):
 
 
 logzero.loglevel(logging.INFO)
-CPU_START = (26, 62)    # pin on NUMA node 1
+CPU_START = (0, 36)    # pin on NUMA node 1
 
 def main(
-    base_dir='/mnt/hdd/fast20/jpeg/flickr2500', ext='jpg', 
-    num_workers=8, sort_fie=False, smart=False, batch_size=64,
-    verbose=False, expname=None):
+    base_dir='/home/zf/activedisk/data/flickr15k/', ext='.jpg', sort=None, 
+    num_cores=8, workers_per_core=1,
+    smartsim=False, kinetic=False, kproxy=False,
+    batch_size=64,
+    store_result=False, expname=None, verbose=False, ):
 
     if verbose:
         logzero.loglevel(logging.DEBUG)
 
     # prepare CPU affinity
-    assert num_workers ==1 or num_workers % 2 == 0, "Must give an even number for num_workers or 1: {}".format(num_workers)
-    if num_workers > 1:
-        cpuset = range(CPU_START[0], CPU_START[0] + num_workers /2) + range(CPU_START[1], CPU_START[1] + num_workers / 2)
+    assert num_cores ==1 or num_cores % 2 == 0, "Must give an even number for num_cores or 1: {}".format(num_cores)
+    if num_cores > 1:
+        cpuset = range(CPU_START[0], int(CPU_START[0] + num_cores /2)) + range(CPU_START[1], int(CPU_START[1] + num_cores / 2))
     else:
         cpuset = [CPU_START[0], ]
     logger.info("cpuset: {}".format(cpuset))
     psutil.Process().cpu_affinity(cpuset)
 
-    # prepare paths
-    paths = list(recursive_glob(base_dir, '*.{}'.format(ext)))
-    if sort_fie:
-        logger.info("Sorting paths")
+    # prepare expname
+    assert not store_result or expname is not None
+    logger.info("Using expname: {}".format(expname))
+
+    # prepare and sort paths
+    assert sort in (None, 'fie', 'name')
+    base_dir = str(pathlib.Path(base_dir).resolve())
+    paths = list(filter(lambda p: p.suffix == ext, pathlib.Path(base_dir).rglob('*')))
+    paths = list(map(str, paths))
+    if sort == 'fie':
+        logger.info("Sort paths by FIE")
         paths = sorted(paths, key=get_fie_physical_start)
+    elif sort == 'name':
+        logger.info("Sort paths by name")
+        paths = sorted(paths, key=lambda p: pathlib.Path(p).name)
     else:
         # deterministic pseudo-random
+        logger.info("Shuffle paths")
         random.seed(42)
         random.shuffle(paths)
+    logger.info("Find {} files under {}".format(len(paths), base_dir))
+
 
     trn_name = 'trn10'  # taipei-scrubbing.py in Blazeit
     # trn_name = 'trn18'  # end2end.py in Blazeit
@@ -237,12 +255,24 @@ def main(
     ])
 
     # Queue to collect decoded and preprocessed samples
-    sample_q = mp.Queue()
+    preprocessed_q = mp.Queue()
 
     # prepare the filter chain
-    if smart:
+    if smartsim:
+        logger.warn("Using sim smart storage decoder")
         filter_configs = [
             FilterConfig(SmartDecodeFilter),
+        ]
+    elif kinetic:
+        logger.warn("Using kinetic client + naive decode")
+        filter_configs = [
+            FilterConfig(SimpleKineticGetFilter),
+            FilterConfig(DecodeFilter),
+        ]
+    elif kproxy:
+        logger.warn("Using kproxy with on-drive decode")
+        filter_config = [
+            FilterConfig(ProxyKineticGetDecodeFilter),
         ]
     else:
         filter_configs = [
@@ -250,7 +280,7 @@ def main(
             FilterConfig(DecodeFilter),
         ]
 
-    filter_configs.append(FilterConfig(TransformAndSendFilter, args=(preprocess, sample_q)))
+    filter_configs.append(FilterConfig(TransformAndSendFilter, args=(preprocess, preprocessed_q)))
 
     manager = mp.Manager()
     context = Context(manager)
@@ -267,12 +297,12 @@ def main(
     last_batch_time = tic
     elapsed_gpu = 0.
 
-    search_thread = threading.Thread(target=run_search, args=(filter_configs, num_workers, paths, context))
+    search_thread = threading.Thread(target=run_search, args=(filter_configs, num_cores*workers_per_core, paths, context))
     search_thread.daemon = True
     search_thread.start()
 
-    for batch_id in range(int(len(paths)/batch_size)):
-        image_tensor = torch.stack([sample_q.get() for _ in range(batch_size)])
+    for batch_id in tqdm(range(int(len(paths)/batch_size))):
+        image_tensor = torch.stack([preprocessed_q.get() for _ in range(batch_size)])
         image_tensor = image_tensor.cuda()
         # print image_tensor.shape, image_tensor.dtype
 
@@ -280,8 +310,8 @@ def main(
         output = model(image_tensor)
         now = time.time()
 
-        logger.info("Run batch {} in {:.3f} ms".format(num_batches, 1000*(now-last_batch_time)))
-        logger.info("Batch GPU time: {:.3f} ms".format(1000*(now-tic_gpu)))
+        logger.debug("Run batch {} in {:.3f} ms".format(num_batches, 1000*(now-last_batch_time)))
+        logger.debug("Batch GPU time: {:.3f} ms".format(1000*(now-tic_gpu)))
 
         last_batch_time = now
         elapsed_gpu += (now - tic_gpu)
@@ -289,7 +319,7 @@ def main(
 
     # flush the last batch
     for _ in range(len(paths) - num_batches * batch_size):
-        sample_q.get()
+        preprocessed_q.get()
 
     elapsed = time.time() - tic
     elapsed_cpu = time.clock() - tic_cpu
@@ -306,7 +336,7 @@ def main(
     logger.info("Elapsed {:.3f} ms, CPU elapsed {:.3f} ms / image".format(1000*elapsed/num_items, 1000*elapsed_cpu/num_items))
     logger.info(str(context.stats))
 
-    keys_dict={'expname': expname, 'basedir': base_dir, 'ext': ext, 'num_workers': num_workers, 'hostname': this_hostname}
+    keys_dict={'expname': expname, 'basedir': base_dir, 'ext': ext, 'num_workers': num_cores, 'hostname': this_hostname}
     vals_dict={
                     'num_items': num_items,
                     'avg_wall_ms': 1e3 * elapsed / num_items,
@@ -316,8 +346,9 @@ def main(
 
     logger.info(str(keys_dict))
     logger.info(str(vals_dict))
+    logger.info("obj tput: {}".format(1000 // vals_dict['avg_wall_ms']))
 
-    if expname:
+    if store_result:
         sess = dbutils.get_session()
         dbutils.insert_or_update_one(
             sess, 
@@ -326,7 +357,6 @@ def main(
             vals_dict=vals_dict)
         sess.commit()
         sess.close()
-
 
 
 if __name__ == '__main__':
