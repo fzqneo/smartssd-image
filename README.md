@@ -4,8 +4,7 @@ s3dexp (previously "Smart SSD", now maybe "Somewhat Smart Spinning Disk"?)
 
 Cloning: `git clone --recursive git@github.com:fzqneo/smartssd-image.git`
 
-**FAST'20 submission deadline: 9/26/2019**
-
+https://anonymous.4open.science/r/866346b2-db04-4beb-a636-a26b3551092e/
 
 ## Experiment Infrastructure
 
