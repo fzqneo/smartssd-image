@@ -41,7 +41,7 @@ def ingest(dir_path, drive_ip, ext='.jpg'):
             key = p.name
             with p.open('rb') as f:
                 payload = f.read()
-            if len(payload) > 1024*1024:
+            if len(payload) > 5*1024*1024:
                 print("{} is too large: {} Skip.".format(p, len(payload)))
                 large_files.append(str(p))
                 continue

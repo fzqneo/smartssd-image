@@ -18,7 +18,7 @@ from s3dexp.kinetic.proxy_client import KineticProxyClient
 
 def get_drives_envvar():
     rv = os.getenv('KINETIC_DRIVES').split(' ')
-    logger.info("Obtain drives from env var: {}".format(rv))
+    logger.info("Obtain drives from env var KINETIC_DRIVES: {}".format(rv))
     return rv
 
 class SimpleKineticGetFilter(Filter):
