@@ -15,7 +15,7 @@ class DecodeFilter(Filter):
 
     def __call__(self, item):
         if  pathlib.Path(item.src).suffix == '.npy':
-            item.array = np.load(io.BytesIO(item.data))
+            item.array = np.load(io.BytesIO(item.data), allow_pickle=True)
         else:
             bgr = cv2.imdecode(np.frombuffer(item.data, np.int8), cv2.IMREAD_COLOR)
             item.array = bgr

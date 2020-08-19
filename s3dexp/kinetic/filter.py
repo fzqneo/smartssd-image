@@ -17,7 +17,7 @@ from s3dexp.search import Filter
 from s3dexp.kinetic.proxy_client import KineticProxyClient
 
 def get_drives_envvar():
-    rv = os.getenv('KINETIC_DRIVES').split(' ')
+    rv = os.getenv('KINETIC_DRIVES').split()
     logger.info("Obtain drives from env var KINETIC_DRIVES: {}".format(rv))
     return rv
 
@@ -28,44 +28,42 @@ class SimpleKineticGetFilter(Filter):
         if not drive_ips:
             drive_ips = get_drives_envvar()
 
+        self.drive_ips = drive_ips
         self.result = []
-        def data_callbak(msg, cmd, value):
-            key = bytes(cmd.body.keyValue.key)
-            if cmd.status.code != kinetic_pb2.Command.Status.SUCCESS:
-                logger.error("\t Key: " +  str(cmd.body.keyValue.key) + \
-                            ", BC: received ackSeq: "+str(cmd.header.ackSequence)+\
-                            ", msgType: "+str(MsgTypes.Name(cmd.header.messageType))+\
-                            ", statusCode: "+str(StatusCodes.Name(cmd.status.code)))
-                value = b''
-            else:
-                logger.debug("[get] Success: GET " + str(cmd.body.keyValue.key))
-                value = value
-
-            self.result.append(bytes(value))
-
-
-        # kvclients = []
-        # for drive_ip in drive_ips:
-        #     kvclient = Client(drive_ip)
-        #     kvclient.connect()
-        #     assert kvclient.is_connected, "Failed to connect to drive"
-        #     logger.info("kv_client connected {}".format(drive_ip))
-        #     kvclient.queue_depth = 5
-        #     kvclient.callback_delegate = data_callbak
-        #     kvclients.append(kvclient)
-        # self.kvclients = kvclients
-        
-        drive_ip = random.choice(drive_ips)        
-        kvclient = Client(drive_ip)
-        kvclient .connect()
-        assert kvclient.is_connected, "Failed to connect to drive"
-        logger.info("kv_client connected {}".format(drive_ip))
-        kvclient.queue_depth = 5
-        kvclient.callback_delegate = data_callbak
-        self.kvclient = kvclient
+        self.kvclient = None
 
 
     def __call__(self, item):
+
+        # hack: try to let each worker pick a different drive 
+        # (ramdom not good enough. think birthday attack)
+        if self.kvclient is None:
+            def data_callbak(msg, cmd, value):
+                key = bytes(cmd.body.keyValue.key)
+                if cmd.status.code != kinetic_pb2.Command.Status.SUCCESS:
+                    logger.error("\t Key: " +  str(cmd.body.keyValue.key) + \
+                                ", BC: received ackSeq: "+str(cmd.header.ackSequence)+\
+                                ", msgType: "+str(MsgTypes.Name(cmd.header.messageType))+\
+                                ", statusCode: "+str(StatusCodes.Name(cmd.status.code)))
+                    value = b''
+                else:
+                    logger.debug("[get] Success: GET " + str(cmd.body.keyValue.key))
+                    value = value
+    
+                self.result.append(bytes(value))
+    
+
+            worker_id = self.session_stats['worker_id']
+            drive_ip = self.drive_ips[int(worker_id) % len(self.drive_ips)]
+            kvclient = Client(drive_ip)
+            kvclient .connect()
+            assert kvclient.is_connected, "Failed to connect to drive"
+            logger.info("kv_client connected {}".format(drive_ip))
+            kvclient.queue_depth = 5
+            kvclient.callback_delegate = data_callbak
+            self.kvclient = kvclient
+
+
         kvclient = self.kvclient
         key = pathlib.Path(item.src).name
         kvclient.get(key)
