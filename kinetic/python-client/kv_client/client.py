@@ -26,7 +26,9 @@ import batch
 import common
 import kinetic_pb2
 
-print "zf: This module has disabled hmac calculation"
+_disable_hmac = False
+if _disable_hmac:
+    print "zf: This module has disabled hmac calculation"
 class Client(object):
     """
     Client is the main class that is used to interface with a
@@ -420,7 +422,8 @@ class Client(object):
             m.authType = kinetic_pb2.Message.HMACAUTH
             m.hmacAuth.identity = self.identity
             # zf: hack disble hmac on send
-            # m.hmacAuth.hmac = self._calculate_hmac(command_bytes)
+            if not _disable_hmac:
+                m.hmacAuth.hmac = self._calculate_hmac(command_bytes)
 
         m.commandBytes = command_bytes
 
@@ -600,11 +603,12 @@ class Client(object):
         msg, cmd, value = self._network_recv()
         # (zf) hack: disable HMAC validation on receive
         # # Validate HMAC on HMACAUTH responses
-        # if msg.authType == 1:
-        #     cal_hmac = self._calculate_hmac(cmd.SerializeToString())
-        #     if not msg.hmacAuth.hmac or cal_hmac != msg.hmacAuth.hmac:
-        #         self._client_error_callback(kinetic_pb2.Command.Status.HMAC_FAILURE, "failed HMAC validation on response")
-        #         return
+        if not _disable_hmac:
+            if msg.authType == 1:
+                cal_hmac = self._calculate_hmac(cmd.SerializeToString())
+                if not msg.hmacAuth.hmac or cal_hmac != msg.hmacAuth.hmac:
+                    self._client_error_callback(kinetic_pb2.Command.Status.HMAC_FAILURE, "failed HMAC validation on response")
+                    return
         self._on_response(msg, cmd, value)
 
     def _listen(self):

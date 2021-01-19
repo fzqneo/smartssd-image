@@ -13,6 +13,8 @@ from tqdm import tqdm
 from s3dexp.utils import recursive_glob
 
 def convert_format(src_dir, dest_dir, to_ext='.ppm', from_ext=".jpg"):
+    if not to_ext.startswith('.'):
+        to_ext = '.'+to_ext
     assert to_ext in ('.jpg', '.png', '.ppm', '.npy')
 
     src_dir = pathlib.Path(src_dir).resolve()
@@ -27,7 +29,7 @@ def convert_format(src_dir, dest_dir, to_ext='.ppm', from_ext=".jpg"):
         if to_ext == '.npy':
             np.save(opath, arr)
         else:
-            cv2.imwrite(opath, arr)
+            cv2.imwrite(str(opath), arr)
 
 def sample_dir(src_dir, dest_dir, num, ext='.jpg', ):
     """Sampling `num` files from src_dir and save them to dest_dir.

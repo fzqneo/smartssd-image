@@ -1,6 +1,13 @@
 
 restart: build push dsh-pull dsh-rm dsh-run
 
+
+build-ffmpeg:
+	docker build -t registry.cmusatyalab.org/zf/diamond-public-registry/kinetic/ffmpeg:arm -f Dockerfile.ffmpeg .
+
+push-ffmpeg:
+	docker push registry.cmusatyalab.org/zf/diamond-public-registry/kinetic/ffmpeg:arm
+
 build:
 	docker build -t registry.cmusatyalab.org/zf/diamond-public-registry/kinetic:arm .
 
