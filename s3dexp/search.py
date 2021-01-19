@@ -90,7 +90,7 @@ class Context(object):
         )
 
 
-def search_work(filter_configs, context):
+def search_work(filter_configs, context, worker_id=0):
     assert isinstance(context, Context)
     logger.info("[Worker {}] started".format(os.getpid()))
     filters = map(lambda fc: fc.instantiate(), filter_configs)
@@ -102,6 +102,7 @@ def search_work(filter_configs, context):
 
     # allow different filters to update some global stats
     session_stats = collections.defaultdict(float)
+    session_stats['worker_id'] = worker_id
     for f in filters:
         f.set_session_stats(session_stats)
 
@@ -145,7 +146,7 @@ def search_work(filter_configs, context):
 def run_search(filter_configs, num_workers, path_list_or_gen, context):
     workers = []
     for i in range(num_workers):
-        w = mp.Process(target=search_work, args=(filter_configs, context), name='worker-{}'.format(i))
+        w = mp.Process(target=search_work, args=(filter_configs, context, i), name='worker-{}'.format(i))
         w.daemon = True
         w.start()
         workers.append(w)

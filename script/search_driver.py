@@ -32,7 +32,13 @@ from s3dexp.utils import recursive_glob, get_fie_physical_start
 
 logzero.loglevel(logging.INFO)
 
-CPU_START = (0, 36)    # pin on NUMA node 0
+# log_format = '%(color)s[%(levelname)1.1s %(process)d %(asctime)s %(module)s:%(lineno)d]%(end_color)s %(message)s'
+# formatter = logzero.LogFormatter(fmt=log_format)
+# logzero.formatter(formatter=formatter)
+# 
+
+
+CPU_START = (0, 12)    # pin on NUMA node 0
 
 def run(
     search_file, base_dir, ext='.jpg', num_cores=8, workers_per_core=1,
@@ -45,7 +51,7 @@ def run(
         base_dir {str} -- diretory to glob files to process
     
     Keyword Arguments:
-        ext {str} -- file extension filter (default: {'jpg'})
+        ext {str} -- file extension filter (default: {'.jpg'})
         num_cores {int} -- number of logical cores (default: {8})
         workers_per_core {int} -- number of workers per logical core (default: {1})
         store_result {bool} -- whether store measurements to DB (default: {False})
