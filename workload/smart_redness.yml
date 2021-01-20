@@ -3,6 +3,9 @@ expname: smart_redness
 filters:
   -
     filter: SmartDecodeFilter
+    kwargs:
+      map_from_dir: "/srv/diamond/sec21"
+      map_to_ppm_dir: "/mnt/ramfs"
   -
     filter: ColorFilter
     kwargs:

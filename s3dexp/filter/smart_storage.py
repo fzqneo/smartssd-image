@@ -1,11 +1,21 @@
 from s3dexp.sim.client import SmartStorageClient
 from s3dexp.search import Filter
 
+class SmartReadFilter(Filter):
+    def __init__(self, map_from_dir, map_to_ppm_dir):
+        super(SmartReadFilter, self).__init__()
+        self.ss_client = SmartStorageClient(map_from_dir, map_to_ppm_dir)
+
+    def __call__(self, item):
+        content = self.ss_client.read(item.src)
+        item.data = content
+        self.session_stats['bytes_from_disk'] += len(content)
+        return True
 
 class SmartDecodeFilter(Filter):
-    def __init__(self, map_from_dir='/mnt/hdd/fast20/jpeg'):
+    def __init__(self, map_from_dir, map_to_ppm_dir):
         super(SmartDecodeFilter, self).__init__(map_from_dir)
-        self.ss_client = SmartStorageClient(map_from_dir=map_from_dir)
+        self.ss_client = SmartStorageClient(map_from_dir, map_to_ppm_dir)
 
     def __call__(self, item):
         path = item.src
@@ -16,9 +26,9 @@ class SmartDecodeFilter(Filter):
 
 
 class SmartFaceFilter(Filter):
-    def __init__(self, map_from_dir='/mnt/hdd/fast20/jpeg', min_faces=1):
+    def __init__(self, map_from_dir, map_to_ppm_dir, min_faces=1):
         super(SmartFaceFilter, self).__init__(map_from_dir, min_faces)
-        self.ss_client = SmartStorageClient(map_from_dir=map_from_dir)
+        self.ss_client = SmartStorageClient(map_from_dir, map_to_ppm_dir)
         self.min_faces = 1
 
     def __call__(self, item):

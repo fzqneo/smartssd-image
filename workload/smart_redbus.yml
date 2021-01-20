@@ -3,11 +3,14 @@ expname: smart_redbus
 filters:
   -
     filter: SmartDecodeFilter
+    kwargs:
+      map_from_dir: "/srv/diamond/sec21"
+      map_to_ppm_dir: "/mnt/ramfs"
   -
     filter: ColorFilter
     kwargs:
       bgr_lb: [0, 0, 180]
-      pixels_threshold: 5000
+      pixels_threshold: 2000
   -
     filter: ObjectDetectionFilter
     kwargs:

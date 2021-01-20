@@ -18,7 +18,7 @@ class SmartStorageClient(object):
     The client is not thread-safe.
     """
 
-    def __init__(self, map_from_dir='/mnt/hdd/fast20/jpeg', map_to_ppm_dir='/mnt/ramfs/fast20/ppm', preload=False):
+    def __init__(self, map_from_dir, map_to_ppm_dir, preload=False):
         self.transport = ZMQTransport()
         self.transport.connect()
 
@@ -39,6 +39,9 @@ class SmartStorageClient(object):
 
         # for debugging
         self.late_by = 0.0
+
+    def read(self, path):
+        return self._read_real(path)
 
     def read_decode(self, path):
         """Perform read for real, and emulate decode"""
@@ -154,7 +157,8 @@ class SmartStorageClient(object):
         size = os.path.getsize(path)
         with open(path, 'r') as f:
             fd = f.fileno()
-            _ = os.read(fd, size)
+            content = os.read(fd, size)
+        return content
 
     def __del__(self):
         logger.warn("Avg late by {:.3f} ms".format(self.late_by*1000))
